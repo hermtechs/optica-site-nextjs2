@@ -1,42 +1,69 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* ---- Theme tokens (adds to Tailwind; doesn't replace defaults) ---- */
+@theme {
+  /* Your palette */
+  --color-brand: #0b5bd3; /* deep royal blue */
+  --color-surf: #d5eafe; /* mid light blue */
+  --color-mist: #eaf4ff; /* very light blue */
+  --color-ink: #0e1b3d; /* deep text */
+  --color-muted: #5b6b7c; /* secondary text */
+
+  /* icons */
+  --color-wa: #25d366; /* WhatsApp green */
+
+  /* Extras used by helpers */
+  --radius-xl2: 1.25rem;
+  --shadow-card: 0 10px 30px rgba(11, 91, 211, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ---- Base ---- */
 html,
+body,
+:root {
+  height: 100%;
+}
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  @apply bg-mist text-ink;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ---- Helpers ---- */
+.container-tight {
+  @apply max-w-6xl mx-auto px-4;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+/* Buttons */
+.btn {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-md text-sm font-semibold bg-brand text-white transition;
+}
+.btn:hover {
+  @apply bg-brand/90;
+}
+.btn-outline {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-md text-sm font-semibold border border-brand text-brand bg-white transition;
+}
+.btn-outline:hover {
+  @apply bg-surf;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Cards & panels */
+.card {
+  @apply rounded-xl2 border border-white/60 shadow-card bg-white;
+}
+.card-surf {
+  @apply rounded-xl2 border border-white/60 shadow-card bg-surf;
+}
+.panel-mist {
+  @apply rounded-xl2 bg-mist;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* Text */
+.text-muted {
+  color: var(--color-muted);
+}
+
+/* Optional readability helper for hero text */
+.text-shadow-lg {
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.28);
 }

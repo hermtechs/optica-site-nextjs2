@@ -1,95 +1,60 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useMemo, useState } from "react";
+import PromoBar from "@/components/PromoBar";
+import SiteNavbar from "@/components/SiteNavbar";
+import HeroCarousel from "@/components/HeroCarousel";
+import CollectionsPills from "@/components/CollectionsPills";
+import FeaturedCollection from "@/components/FeaturedCollection";
+import ProductsExplorer from "@/components/ProductsExplorer";
+import Footer from "@/components/Footer";
+import baseProducts from "@/data/products";
+
+function makeManyProducts(src, total = 30) {
+  // repeat and lightly vary price + slug suffix for uniqueness
+  const out = [];
+  let i = 0;
+  while (out.length < total) {
+    const p = src[i % src.length];
+    const n = Math.floor(out.length / src.length) + 1; // batch number
+    out.push({
+      ...p,
+      slug: `${p.slug}-v${n}-${out.length}`,
+      price:
+        typeof p.price === "number"
+          ? Math.max(49, Math.round(p.price * (0.9 + (out.length % 5) * 0.03)))
+          : p.price,
+    });
+    i++;
+  }
+  return out;
+}
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [promoVisible, setPromoVisible] = useState(true);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
+  const manyProducts = useMemo(() => makeManyProducts(baseProducts, 36), []);
+
+  return (
+    <>
+      {promoVisible && <PromoBar onClose={() => setPromoVisible(false)} />}
+      <SiteNavbar overHero offsetByPromo={promoVisible} />
+      <main>
+        <HeroCarousel />
+
+        {/* Categories row (no search here anymore) */}
+        <CollectionsPills /* show category pills only */ />
+
+        {/* Featured section – small curated set */}
+        <FeaturedCollection
+          products={baseProducts}
+          title="FEATURED COLLECTION"
+          subtitle="Editor’s picks—clean silhouettes and everyday comfort."
+        />
+
+        {/* 👇 NEW: full explorer with search + sort + filters */}
+        <ProductsExplorer products={manyProducts} />
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      <Footer />
+    </>
   );
 }
