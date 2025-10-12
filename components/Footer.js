@@ -35,7 +35,7 @@ export default function Footer() {
         {/* Brand + blurb + socials */}
         <div className="space-y-4">
           <a href="/" className="text-2xl font-semibold text-ink">
-            Eyese.
+            Dami Optica
           </a>
           <p className="text-sm text-muted">
             Modern, timeless eyewear and professional eye care. See better, feel
@@ -182,10 +182,10 @@ export default function Footer() {
             <div>
               <p className="font-medium text-ink">Email</p>
               <a
-                href="mailto:hello@eyese.shop"
+                href="mailto:hello@damioptica.shop"
                 className="text-muted hover:text-brand"
               >
-                hello@eyese.shop
+                hello@ damioptica.shop
               </a>
             </div>
           </div>

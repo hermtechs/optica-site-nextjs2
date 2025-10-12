@@ -56,7 +56,7 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
               " text-2xl font-semibold tracking-wide"
             }
           >
-            Eyese.
+            Dami Optica
           </Link>
 
           <nav className="flex items-center gap-6">
