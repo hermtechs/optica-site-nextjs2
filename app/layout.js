@@ -1,14 +1,30 @@
+// app/layout.js
+import "./globals.css";
+import { headers } from "next/headers";
+import LocaleProvider from "@/components/i18n/LocaleProvider";
+
 export const metadata = {
-  title: "Pic N Save – Eyewear",
-  description: "Clean Next.js landing modeled from a screenshot.",
+  title: "DamiOptica",
+  description: "Modern eyewear & care",
 };
 
-import "./globals.css";
+export default async function RootLayout({ children }) {
+  // Detect preferred language from the request headers (server-side)
+  let initial = "es";
+  try {
+    const h = await headers(); // <-- await here
+    const al = (h.get("accept-language") || "").toLowerCase();
+    if (al.startsWith("en")) initial = "en";
+  } catch {
+    // keep default "es" if headers() isn't available
+  }
 
-export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang={initial}>
+      <body>
+        {/* LocaleProvider is a client component that consumes initialLocale */}
+        <LocaleProvider initialLocale={initial}>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }
