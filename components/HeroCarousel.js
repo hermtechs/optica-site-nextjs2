@@ -54,21 +54,17 @@ const SLIDES = [
   },
 ];
 
-// Utility CTA component
 function CTA({ href, children, variant = "primary" }) {
   const base =
     "inline-flex items-center justify-center px-5 py-2.5 rounded-md text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2";
-  if (variant === "secondary") {
-    return (
-      <Link
-        href={href}
-        className={`${base} btn-outline bg-white/10 border-white/60 text-white hover:bg-white/20 focus-visible:ring-white/60`}
-      >
-        {children}
-      </Link>
-    );
-  }
-  return (
+  return variant === "secondary" ? (
+    <Link
+      href={href}
+      className={`${base} btn-outline bg-white/10 border-white/60 text-white hover:bg-white/20 focus-visible:ring-white/60`}
+    >
+      {children}
+    </Link>
+  ) : (
     <Link
       href={href}
       className={`${base} bg-brand text-white hover:opacity-90 focus-visible:ring-brand/40`}
@@ -84,42 +80,44 @@ export default function HeroCarousel() {
   const timer = useRef(null);
   const count = SLIDES.length;
 
-  // Autoplay
   useEffect(() => {
     clearInterval(timer.current);
-    timer.current = setInterval(() => {
-      setIndex((i) => (i + 1) % count);
-    }, 6000);
+    timer.current = setInterval(() => setIndex((i) => (i + 1) % count), 6000);
     return () => clearInterval(timer.current);
   }, [count, locale]);
 
-  const go = (delta) => setIndex((i) => (i + delta + count) % count);
+  const go = (d) => setIndex((i) => (i + d + count) % count);
 
   return (
-    <section className="relative">
-      {/* Background images */}
-      <div className="relative h-[72vh] min-h-[420px] w-full overflow-hidden">
+    <section className="relative overflow-x-hidden">
+      {" "}
+      {/* clamp any stray horizontal pixels */}
+      <div className="relative h-[72vh] min-h-[420px] w-full max-w-full overflow-hidden">
+        {/* Slides */}
         {SLIDES.map((s, i) => (
           <img
             key={s.id}
             src={s.img}
             alt={s.title}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+            className={`absolute inset-0 block h-full w-full max-w-full object-cover transition-opacity duration-700 will-change-transform ${
               i === index ? "opacity-100" : "opacity-0"
             }`}
             loading={i === 0 ? "eager" : "lazy"}
+            draggable={false}
           />
         ))}
 
-        {/* Soft top gradient shadow (sits BEHIND navbar) */}
+        {/* Soft top gradient (behind navbar) */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent"
         />
 
-        {/* Content (above gradient, below navbar which is z-50) */}
-        <div className="relative z-10 flex h-full items-center justify-center">
-          <div className="container-tight text-center text-white">
+        {/* Center content */}
+        <div className="relative z-10 flex h-full w-full max-w-full items-center justify-center">
+          <div className="container-tight text-center text-white min-w-0">
+            {" "}
+            {/* min-w-0 prevents children from forcing width */}
             <p className="text-xs font-semibold tracking-wider uppercase drop-shadow">
               {SLIDES[index].eyebrow}
             </p>
@@ -129,8 +127,6 @@ export default function HeroCarousel() {
             <p className="mt-3 text-base md:text-lg text-white/90 drop-shadow">
               {SLIDES[index].subtitle}
             </p>
-
-            {/* CTAs centered */}
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               {SLIDES[index].ctas.map((c) => (
                 <CTA key={c.href} href={c.href} variant={c.variant}>
@@ -141,7 +137,7 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Dots */}
+        {/* Dots (centered, no overflow) */}
         <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
           <div className="flex items-center gap-2">
             {SLIDES.map((s, i) => (
@@ -157,7 +153,7 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Prev/Next — HIDDEN on mobile, visible from md: up */}
+        {/* Prev/Next — hidden on mobile */}
         <div className="absolute inset-y-0 left-0 right-0 z-10 hidden md:flex items-center justify-between px-2">
           <button
             onClick={() => go(-1)}
