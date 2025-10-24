@@ -1,5 +1,6 @@
+// components/ProductCard.js
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
@@ -13,12 +14,10 @@ function computeFinalPrice(product) {
   const final = Math.max(0, price * (1 - pct / 100));
   return { final: Math.round(final * 100) / 100, hasDiscount: true };
 }
-
 function isNew(createdAtIso, days = 30) {
   try {
     const created = new Date(createdAtIso).getTime();
-    if (!isFinite(created)) return false;
-    return Date.now() - created <= days * 86400000;
+    return isFinite(created) && Date.now() - created <= days * 86400000;
   } catch {
     return false;
   }
@@ -27,31 +26,32 @@ function isNew(createdAtIso, days = 30) {
 export default function ProductCard({ product }) {
   const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
-
   const { final, hasDiscount } = useMemo(
     () => computeFinalPrice(product),
     [product]
   );
-
   const newBadge = isNew(product?.createdAt);
 
-  const productUrl =
-    typeof window === "undefined"
-      ? `/product/${product.slug}`
-      : `${window.location.origin}/product/${product.slug}`;
-
-  const waMsg = encodeURIComponent(
-    `Hola, quiero ordenar este producto:\n` +
-      `• ${product?.name}\n` +
-      `• SKU: ${product?.sku || "N/A"}\n` +
-      `• Precio: $${final.toFixed(2)} USD ${
-        hasDiscount ? `(descuento ${product.discountPct}% aplicado)` : ""
-      }\n` +
-      `• Enlace: ${productUrl}\n` +
-      `Desde: ${typeof window !== "undefined" ? window.location.href : ""}`
-  );
-
-  const waHref = `https://wa.me/?text=${waMsg}`;
+  // Build WhatsApp link on the client to avoid SSR/CSR mismatch
+  const [waHref, setWaHref] = useState("#");
+  useEffect(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const ref = typeof window !== "undefined" ? window.location.href : "";
+    const productUrl = origin
+      ? `${origin}/product/${product.slug}`
+      : `/product/${product.slug}`;
+    const waMsg = encodeURIComponent(
+      `Hola, quiero ordenar este producto:\n` +
+        `• ${product?.name}\n` +
+        `• SKU: ${product?.sku || "N/A"}\n` +
+        `• Precio: $${final.toFixed(2)} USD ${
+          hasDiscount ? `(descuento ${product.discountPct}% aplicado)` : ""
+        }\n` +
+        `• Enlace: ${productUrl}\n` +
+        (ref ? `Desde: ${ref}` : "")
+    );
+    setWaHref(`https://wa.me/?text=${waMsg}`);
+  }, [product, final, hasDiscount]);
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm hover:shadow-md transition">
@@ -96,8 +96,6 @@ export default function ProductCard({ product }) {
             </h3>
             <p className="mt-1 text-xs text-muted">{product.category}</p>
           </div>
-
-          {/* Price */}
           <div className="text-right">
             {hasDiscount ? (
               <div className="flex flex-col items-end">
@@ -116,7 +114,7 @@ export default function ProductCard({ product }) {
           </div>
         </div>
 
-        {/* Description w/ read more/less */}
+        {/* Description */}
         <p className="mt-2 text-sm text-ink/80">
           {expanded ? product.longDesc : product.shortDesc}
         </p>
@@ -138,12 +136,15 @@ export default function ProductCard({ product }) {
           </button>
         )}
 
-        {/* CTA row (WhatsApp with icon) */}
+        {/* CTA */}
         <div className="mt-4">
           <a
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => {
+              if (waHref === "#") e.preventDefault();
+            }}
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-wa,#25D366)] px-3 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
           >
             <FaWhatsapp size={16} aria-hidden="true" />
@@ -151,7 +152,6 @@ export default function ProductCard({ product }) {
           </a>
         </div>
 
-        {/* Stock (optional) */}
         {typeof product.inventory === "number" && (
           <p className="mt-2 text-xs text-muted">
             {product.inventory > 0

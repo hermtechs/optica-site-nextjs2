@@ -1,5 +1,6 @@
+// components/SiteNavbar.js
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Menu, X } from "lucide-react";
@@ -123,9 +124,11 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
 
         {/* RIGHT: Desktop language toggle + Mobile hamburger */}
         <div className="flex items-center gap-2">
-          {/* Desktop language toggle */}
+          {/* Desktop language toggle (wrapped in Suspense) */}
           <div className="hidden md:block">
-            <LanguageToggle size="sm" />
+            <Suspense fallback={null}>
+              <LanguageToggle size="sm" />
+            </Suspense>
           </div>
 
           {/* Mobile hamburger */}
@@ -237,9 +240,11 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                 </li>
               </ul>
 
-              {/* Language toggle inside panel */}
+              {/* Language toggle inside panel (wrapped in Suspense) */}
               <div className="mt-6">
-                <LanguageToggle fullWidth size="md" />
+                <Suspense fallback={null}>
+                  <LanguageToggle fullWidth size="md" />
+                </Suspense>
               </div>
             </nav>
           </div>

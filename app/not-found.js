@@ -1,5 +1,6 @@
+// app/not-found.js
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ArrowLeft, Home } from "lucide-react";
@@ -28,11 +29,12 @@ export default function NotFound() {
 
   return (
     <>
-      {/* No promo bar here to keep it clean; navbar still matches the site */}
-      <SiteNavbar overHero={false} offsetByPromo={false} />
+      {/* Wrap components that might use useSearchParams under Suspense */}
+      <Suspense fallback={null}>
+        <SiteNavbar overHero={false} offsetByPromo={false} />
+      </Suspense>
 
       <main className="relative bg-white">
-        {/* subtle backdrop */}
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-b from-mist/60 to-transparent"
           aria-hidden="true"
@@ -66,9 +68,7 @@ export default function NotFound() {
                 ref={inputRef}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder={
-                  isEN ? t("search_placeholder") : t("search_placeholder")
-                }
+                placeholder={t("search_placeholder")}
                 className="w-full pl-9 pr-24 py-3 rounded-lg border border-brand/25 bg-mist text-sm md:text-base text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
               <button
@@ -97,7 +97,7 @@ export default function NotFound() {
               </Link>
             </div>
 
-            {/* Helpful links (optional quick categories) */}
+            {/* Quick links */}
             <div className="mt-8">
               <p className="text-xs uppercase tracking-wide text-muted mb-2">
                 {isEN ? "Popular quick links" : "Enlaces rápidos populares"}
@@ -137,7 +137,7 @@ export default function NotFound() {
             </div>
           </div>
 
-          {/* Big 404 marker on the side for flair */}
+          {/* Big 404 mark */}
           <div className="pointer-events-none absolute right-0 top-16 hidden lg:block pr-2">
             <div className="text-[140px] leading-none font-black text-brand/5 select-none">
               404
@@ -146,7 +146,9 @@ export default function NotFound() {
         </div>
       </main>
 
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </>
   );
 }
