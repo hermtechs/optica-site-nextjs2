@@ -15,11 +15,10 @@ import LanguageToggle from "@/components/LanguageToggle";
  */
 export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false); // <-- to avoid SSR/CSR locale mismatch
+  const [mounted, setMounted] = useState(false); // avoid SSR/CSR aria-label mismatch
   const router = useRouter();
   const { t } = useLocale();
 
-  // mark mounted
   useEffect(() => setMounted(true), []);
 
   // Close on Escape
@@ -76,7 +75,6 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
         {/* LEFT: Search opens /search */}
         <div className="flex items-center gap-3">
           <button
-            // Avoid hydration mismatch on aria text
             suppressHydrationWarning
             aria-label={ariaSearch}
             className={iconBtn}
@@ -168,7 +166,7 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
       {/* Mobile: backdrop + panel */}
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop (tap to close) */}
           <button
             suppressHydrationWarning
             aria-label={ariaClose}
@@ -176,27 +174,39 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
             className="fixed inset-0 z-40 bg-black/30 md:hidden"
           />
 
-          {/* Panel */}
+          {/* Drawer panel */}
           <div
             className="fixed inset-x-0 top-0 bottom-0 z-50 md:hidden bg-white text-ink overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Always-visible floating close button */}
+            <button
+              suppressHydrationWarning
+              aria-label={ariaClose}
+              onClick={() => setOpen(false)}
+              className="fixed right-3 top-3 z-[60] inline-flex items-center justify-center rounded-full w-10 h-10 bg-white/90 backdrop-blur border border-white/60 shadow hover:bg-mist"
+            >
+              <X size={22} />
+            </button>
+
             {/* Spacer for navbar/promo */}
             <div className={offsetByPromo ? "h-[5rem]" : "h-20"} />
 
-            {/* Panel header */}
-            <div className="container-tight flex items-center justify-between py-2">
-              <span className="text-lg font-semibold text-ink">
-                {t("menu")}
-              </span>
-              <button
-                suppressHydrationWarning
-                aria-label={ariaClose}
-                onClick={() => setOpen(false)}
-                className="inline-flex items-center justify-center rounded-full w-10 h-10 hover:bg-mist focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
-              >
-                <X size={22} />
-              </button>
+            {/* Sticky header (has its own close button too) */}
+            <div className="sticky top-0 z-50 bg-white/95 supports-[backdrop-filter]:bg-white/80 backdrop-blur border-b">
+              <div className="container-tight flex items-center justify-between py-2">
+                <span className="text-lg font-semibold text-ink">
+                  {t("menu")}
+                </span>
+                <button
+                  suppressHydrationWarning
+                  aria-label={ariaClose}
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center justify-center rounded-full w-10 h-10 hover:bg-mist focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                >
+                  <X size={22} />
+                </button>
+              </div>
             </div>
 
             {/* Links */}
@@ -267,7 +277,7 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                 </li>
               </ul>
 
-              {/* Language toggle inside panel (wrapped in Suspense) */}
+              {/* Language toggle inside panel */}
               <div className="mt-6">
                 <Suspense fallback={null}>
                   <LanguageToggle fullWidth size="md" />
