@@ -8,6 +8,9 @@ import FeaturedCollection from "@/components/FeaturedCollection";
 import ProductsExplorer from "@/components/ProductsExplorer";
 import Footer from "@/components/Footer";
 import baseProducts from "@/data/products";
+import EyeTestSection from "@/components/EyeTestSection";
+import AboutHomeSection from "@/components/AboutHomeSection";
+import ContactHomeSection from "@/components/ContactHomeSection";
 
 function makeManyProducts(src, total = 30) {
   // repeat and lightly vary price + slug suffix for uniqueness
@@ -53,6 +56,9 @@ export default function Home() {
 
         {/* 👇 NEW: full explorer with search + sort + filters */}
         <ProductsExplorer products={manyProducts} />
+        <EyeTestSection />
+        <AboutHomeSection />
+        <ContactHomeSection />
       </main>
       <Footer />
     </>

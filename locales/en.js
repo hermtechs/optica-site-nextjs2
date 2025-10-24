@@ -9,6 +9,7 @@ const en = {
   search_aria: "Search",
   menu: "Menu",
   close_menu: "Close menu",
+  about_link: "About",
 
   hero_eyebrow: "Great Accessories",
   hero_cta: "See more",
@@ -76,6 +77,77 @@ const en = {
   legal_cookies: "Cookies",
   legal_accessibility: "Accessibility",
   all_rights: "All rights reserved.",
+
+  // About page
+  about_eyebrow: "Our Story",
+  about_title: "Modern eyewear, human service.",
+  about_subtitle:
+    "DamiOptica started with a simple idea: quality frames, honest guidance, and a pleasant experience — in-store and online.",
+  about_cta_shop: "Shop now",
+  about_cta_browse: "Browse catalog",
+  about_cta_contact: "Contact us",
+  about_our_story: "Who we are",
+  about_story_p1:
+    "We combine renowned brands with our own lines to balance design, comfort, and price.",
+  about_story_p2:
+    "Our expert team guides you end-to-end: from prescriptions to perfect adjustments.",
+  about_point_1: "Comfort-first fit for everyday wear.",
+  about_point_2: "Blue-light options and anti-reflective lenses.",
+  about_point_3: "Friendly warranty and after-care.",
+  about_in_numbers: "By the numbers",
+  about_stat_years: "Years of experience",
+  about_stat_clients: "Happy customers",
+  about_stat_brands: "Brands & styles",
+  about_stat_rating: "Average rating",
+  about_stats_note: "Estimates based on sales and customer reviews.",
+  about_values_title: "Our values",
+  about_values_sub: "What guides every recommendation, fit, and delivery.",
+  about_value_care: "Human care",
+  about_value_care_desc: "We listen first and recommend what truly suits you.",
+  about_value_vision: "Eye health",
+  about_value_vision_desc: "Treatments and lenses that protect your vision.",
+  about_value_quality: "Quality & warranty",
+  about_value_quality_desc: "Durable frames and reliable after-care.",
+  about_value_experts: "Experts",
+  about_value_experts_desc: "Experienced opticians with ongoing training.",
+  about_ready_title: "Ready to see and look better?",
+  about_ready_sub: "Explore the catalog or message us — we’re here to help.",
+
+  // Eye tests (home & about)
+  eye_eyebrow: "Eye Exams",
+  eye_title: "Professional eye tests",
+  eye_subtitle:
+    "Comprehensive assessments for precise prescriptions and preventive eye health.",
+  eye_point_optometrists: "Certified optometrists",
+  eye_point_optometrists_desc:
+    "Friendly care and honest recommendations for your needs.",
+  eye_point_equipment: "Modern equipment",
+  eye_point_equipment_desc:
+    "High-accuracy measurements and up-to-date treatments.",
+  eye_point_results: "Same-day results",
+  eye_point_results_desc: "Get your prescription and suggestions in minutes.",
+  eye_cta_book: "Book eye exam",
+  eye_cta_more: "Learn more",
+  eye_cta_contact: "Message us",
+  eye_img_alt: "Eye exam at DamiOptica",
+
+  // Contact
+  contact_eyebrow: "Contact",
+  contact_title: "Get in touch",
+  contact_subtitle:
+    "Appointments, questions and support. We’ll get back to you soon.",
+  contact_reach_us: "Our details",
+  contact_phone: "Call us",
+  contact_email_label: "Email",
+  contact_visit: "Visit us",
+  contact_form_title: "Send us a message",
+  contact_name: "Name",
+  contact_name_ph: "Your name",
+  contact_email: "Email",
+  contact_message: "Message",
+  contact_message_ph: "How can we help?",
+  contact_send: "Send",
+  contact_map_title: "DamiOptica location",
 };
 
 export default en;

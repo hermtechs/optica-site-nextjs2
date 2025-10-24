@@ -1,5 +1,6 @@
 // components/SiteNavbar.js
 "use client";
+
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,8 +15,12 @@ import LanguageToggle from "@/components/LanguageToggle";
  */
 export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false); // <-- to avoid SSR/CSR locale mismatch
   const router = useRouter();
   const { t } = useLocale();
+
+  // mark mounted
+  useEffect(() => setMounted(true), []);
 
   // Close on Escape
   useEffect(() => {
@@ -59,6 +64,11 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
       ? "hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 text-white"
       : "hover:bg-surf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 text-ink");
 
+  // Localized aria labels only after mount to prevent hydration mismatch
+  const ariaSearch = mounted ? t("search_aria") : undefined;
+  const ariaMenu = mounted ? t("menu") : undefined;
+  const ariaClose = mounted ? t("close_menu") : undefined;
+
   return (
     <header className={wrap} role="navigation" aria-label="Main">
       {/* Top bar */}
@@ -66,7 +76,9 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
         {/* LEFT: Search opens /search */}
         <div className="flex items-center gap-3">
           <button
-            aria-label={t("search_aria")}
+            // Avoid hydration mismatch on aria text
+            suppressHydrationWarning
+            aria-label={ariaSearch}
             className={iconBtn}
             onClick={() => router.push("/search?autofocus=1")}
           >
@@ -99,6 +111,9 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
           </Link>
 
           <nav className="flex items-center gap-6">
+            <Link href="/about" className={link}>
+              {t("about_link")}
+            </Link>
             <Link href="/search?q=blog" className={link}>
               {t("blog")}
             </Link>
@@ -134,7 +149,8 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
           {/* Mobile hamburger */}
           <div className="md:hidden">
             <button
-              aria-label={open ? t("close_menu") : t("menu")}
+              suppressHydrationWarning
+              aria-label={open ? ariaClose : ariaMenu}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
               className={iconBtn}
@@ -154,7 +170,8 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
         <>
           {/* Backdrop */}
           <button
-            aria-label={t("close_menu")}
+            suppressHydrationWarning
+            aria-label={ariaClose}
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 bg-black/30 md:hidden"
           />
@@ -173,7 +190,8 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                 {t("menu")}
               </span>
               <button
-                aria-label={t("close_menu")}
+                suppressHydrationWarning
+                aria-label={ariaClose}
                 onClick={() => setOpen(false)}
                 className="inline-flex items-center justify-center rounded-full w-10 h-10 hover:bg-mist focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
               >
@@ -209,6 +227,15 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                     onClick={() => setOpen(false)}
                   >
                     {t("products")}
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/about"
+                    className="block px-1 py-2 rounded hover:bg-mist"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t("about_link")}
                   </Link>
                 </li>
                 <li>

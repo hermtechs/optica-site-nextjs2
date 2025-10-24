@@ -10,6 +10,7 @@ const es = {
   search_aria: "Buscar",
   menu: "Menú",
   close_menu: "Cerrar menú",
+  about_link: "Nosotros",
 
   // hero
   hero_eyebrow: "Grandes Accesorios",
@@ -84,6 +85,81 @@ const es = {
   legal_cookies: "Cookies",
   legal_accessibility: "Accesibilidad",
   all_rights: "Todos los derechos reservados.",
+
+  // About page
+  about_eyebrow: "Nuestra Historia",
+  about_title: "Óptica moderna, servicio humano.",
+  about_subtitle:
+    "DamiOptica nació con una idea sencilla: gafas de calidad, asesoría honesta y una experiencia agradable — en tienda y online.",
+  about_cta_shop: "Comprar ahora",
+  about_cta_browse: "Explorar catálogo",
+  about_cta_contact: "Contáctanos",
+  about_our_story: "Quiénes somos",
+  about_story_p1:
+    "Combinamos marcas reconocidas con monturas propias para ofrecer equilibrio entre diseño, comodidad y precio.",
+  about_story_p2:
+    "Nuestro equipo de expertos te guía en todo el proceso: desde medir tu graduación hasta ajustar tus gafas.",
+  about_point_1: "Ajuste y comodidad pensados para uso diario.",
+  about_point_2: "Filtros de luz azul y lentes con tratamiento antirreflejo.",
+  about_point_3: "Garantía y soporte post-venta cercanos.",
+  about_in_numbers: "En números",
+  about_stat_years: "Años de experiencia",
+  about_stat_clients: "Clientes felices",
+  about_stat_brands: "Marcas y estilos",
+  about_stat_rating: "Calificación promedio",
+  about_stats_note:
+    "Datos estimados con base en ventas y valoraciones de clientes.",
+  about_values_title: "Nuestros valores",
+  about_values_sub:
+    "Lo que guía cada recomendación, cada ajuste y cada entrega.",
+  about_value_care: "Cuidado humano",
+  about_value_care_desc:
+    "Escuchamos tus necesidades y buscamos la mejor solución para ti.",
+  about_value_vision: "Salud visual",
+  about_value_vision_desc:
+    "Trabajamos con tratamientos y lentes que protegen tu vista.",
+  about_value_quality: "Calidad y garantía",
+  about_value_quality_desc:
+    "Monturas resistentes y servicio post-venta para mayor tranquilidad.",
+  about_value_experts: "Profesionales",
+  about_value_experts_desc: "Ópticos con experiencia y capacitación continua.",
+  about_ready_title: "¿Listo para ver y verte mejor?",
+  about_ready_sub: "Explora el catálogo o escríbenos: estamos para ayudarte.",
+
+  // Eye tests (home & about)
+  eye_eyebrow: "Exámenes Visuales",
+  eye_title: "Exámenes de la vista profesionales",
+  eye_subtitle:
+    "Realizamos evaluaciones completas para graduaciones precisas y cuidado preventivo de tu salud visual.",
+  eye_point_optometrists: "Optometristas certificados",
+  eye_point_optometrists_desc:
+    "Atención cercana y recomendaciones honestas para tu caso.",
+  eye_point_equipment: "Equipos modernos",
+  eye_point_equipment_desc:
+    "Mediciones de alta precisión y tratamientos actualizados.",
+  eye_point_results: "Resultados el mismo día",
+  eye_point_results_desc: "Recibe tu graduación y sugerencias en minutos.",
+  eye_cta_book: "Agendar examen",
+  eye_cta_more: "Saber más",
+  eye_cta_contact: "Escríbenos",
+  eye_img_alt: "Examen visual en DamiOptica",
+
+  // Contact
+  contact_eyebrow: "Contacto",
+  contact_title: "Ponte en contacto",
+  contact_subtitle: "Agendamientos, consultas y soporte. Responderemos pronto.",
+  contact_reach_us: "Nuestros datos",
+  contact_phone: "Llámanos",
+  contact_email_label: "Correo",
+  contact_visit: "Visítanos",
+  contact_form_title: "Envíanos un mensaje",
+  contact_name: "Nombre",
+  contact_name_ph: "Tu nombre",
+  contact_email: "Correo",
+  contact_message: "Mensaje",
+  contact_message_ph: "¿Cómo podemos ayudarte?",
+  contact_send: "Enviar",
+  contact_map_title: "Ubicación de DamiOptica",
 };
 
 export default es;
