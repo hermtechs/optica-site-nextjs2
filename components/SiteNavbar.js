@@ -176,23 +176,19 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
 
           {/* Drawer panel */}
           <div
-            className="fixed inset-x-0 top-0 bottom-0 z-50 md:hidden bg-white text-ink overflow-y-auto"
+            className="
+              fixed inset-x-0 top-0 bottom-0 z-50 md:hidden
+              bg-white text-ink
+              overflow-y-auto overflow-x-hidden     /* prevent side scroll */
+              overscroll-contain touch-pan-y         /* better mobile scroll */
+              w-screen                               /* lock width to viewport */
+            "
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Always-visible floating close button */}
-            <button
-              suppressHydrationWarning
-              aria-label={ariaClose}
-              onClick={() => setOpen(false)}
-              className="fixed right-3 top-3 z-[60] inline-flex items-center justify-center rounded-full w-10 h-10 bg-white/90 backdrop-blur border border-white/60 shadow hover:bg-mist"
-            >
-              <X size={22} />
-            </button>
-
             {/* Spacer for navbar/promo */}
             <div className={offsetByPromo ? "h-[5rem]" : "h-20"} />
 
-            {/* Sticky header (has its own close button too) */}
+            {/* Sticky header with single close button */}
             <div className="sticky top-0 z-50 bg-white/95 supports-[backdrop-filter]:bg-white/80 backdrop-blur border-b">
               <div className="container-tight flex items-center justify-between py-2">
                 <span className="text-lg font-semibold text-ink">
