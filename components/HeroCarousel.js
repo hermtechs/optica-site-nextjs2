@@ -1,136 +1,178 @@
+// components/HeroCarousel.js
 "use client";
-import { useEffect, useRef, useState } from "react";
 
-const slides = [
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { useLocale } from "@/components/i18n/LocaleProvider";
+
+const SLIDES = [
   {
-    img: "/hero-banner.jpg", // place in /public or change paths
-    eyebrow: "Great Accessories",
-    titleLines: ["Modern and", "Timeless Glasses"],
-    desc:
-      "Purus commodo faucibus fermentum tortor suscipit morbi fringilla ac. " +
-      "Egestas tempus fermentum tortor rhoncus pulvinar netus.",
-    ctaText: "See more",
-    ctaHref: "#",
+    id: 1,
+    img: "/hero-banner.jpg",
+    eyebrow: "Nueva temporada",
+    title: "Monturas ligeras, visión clara",
+    subtitle: "Comodidad diaria con estilo minimalista.",
+    ctas: [
+      { href: "/products", label: "Comprar ahora", variant: "primary" },
+      {
+        href: "/search?cats=Sunglasses",
+        label: "Ver gafas de sol",
+        variant: "secondary",
+      },
+    ],
   },
   {
+    id: 2,
     img: "/hero-banner2.jpg",
-    eyebrow: "Summer Collection",
-    titleLines: ["Shades for", "Every Adventure"],
-    desc: "Feather-light frames, polarized lenses, all-day comfort.",
-    ctaText: "Shop now",
-    ctaHref: "#",
+    eyebrow: "Edición azul",
+    title: "Protección luz azul, menos fatiga",
+    subtitle: "Trabaja y juega con mayor comodidad visual.",
+    ctas: [
+      {
+        href: "/products?cats=Blue-Light%20Glasses",
+        label: "Luz azul",
+        variant: "primary",
+      },
+      { href: "/search", label: "Explorar todo", variant: "secondary" },
+    ],
   },
   {
+    id: 3,
     img: "/hero-banner3.jpg",
-    eyebrow: "Limited Drop",
-    titleLines: ["Retro Frames", "Reimagined"],
-    desc: "Classic silhouettes with modern materials and colors.",
-    ctaText: "Explore",
-    ctaHref: "#",
+    eyebrow: "Sol & ciudad",
+    title: "Sunglasses con tratamiento UV400",
+    subtitle: "Bloqueo confiable. Estilos para cada día.",
+    ctas: [
+      {
+        href: "/products?cats=Sunglasses",
+        label: "Sunglasses",
+        variant: "primary",
+      },
+      { href: "/about", label: "Conócenos", variant: "secondary" },
+    ],
   },
 ];
 
+// Utility CTA component
+function CTA({ href, children, variant = "primary" }) {
+  const base =
+    "inline-flex items-center justify-center px-5 py-2.5 rounded-md text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2";
+  if (variant === "secondary") {
+    return (
+      <Link
+        href={href}
+        className={`${base} btn-outline bg-white/10 border-white/60 text-white hover:bg-white/20 focus-visible:ring-white/60`}
+      >
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className={`${base} bg-brand text-white hover:opacity-90 focus-visible:ring-brand/40`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default function HeroCarousel() {
-  const [i, setI] = useState(0);
-  const len = slides.length;
+  const { locale } = useLocale();
+  const [index, setIndex] = useState(0);
   const timer = useRef(null);
+  const count = SLIDES.length;
 
-  const goto = (n) => setI((n + len) % len);
-  const next = () => goto(i + 1);
-  const prev = () => goto(i - 1);
-
+  // Autoplay
   useEffect(() => {
-    timer.current = setInterval(next, 5500);
+    clearInterval(timer.current);
+    timer.current = setInterval(() => {
+      setIndex((i) => (i + 1) % count);
+    }, 6000);
     return () => clearInterval(timer.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i]);
+  }, [count, locale]);
+
+  const go = (delta) => setIndex((i) => (i + delta + count) % count);
 
   return (
     <section className="relative">
-      {/* Stage */}
-      <div className="relative h-[70vh] md:h-[76vh] lg:h-[82vh] overflow-hidden">
-        {slides.map((s, idx) => (
-          <div
-            key={idx}
-            className={
-              "absolute inset-0 transition-opacity duration-700 " +
-              (i === idx ? "opacity-100" : "opacity-0")
-            }
-            aria-hidden={i !== idx}
-          >
-            {/* Background */}
-            <img
-              src={s.img}
-              alt=""
-              className="w-full h-full object-cover z-0"
-            />
-            {/* Overlays behind navbar */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/30 z-0" />
-            <div className="absolute left-0 top-0 bottom-0 w-44 md:w-64 bg-gradient-to-r from-black/25 to-transparent z-0" />
-          </div>
+      {/* Background images */}
+      <div className="relative h-[72vh] min-h-[420px] w-full overflow-hidden">
+        {SLIDES.map((s, i) => (
+          <img
+            key={s.id}
+            src={s.img}
+            alt={s.title}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+              i === index ? "opacity-100" : "opacity-0"
+            }`}
+            loading={i === 0 ? "eager" : "lazy"}
+          />
         ))}
 
-        {/* Content */}
-        <div className="absolute inset-0 z-10">
-          <div className="container-tight h-full grid place-items-center">
-            <div className="text-white text-center text-shadow-lg max-w-2xl">
-              <p className="uppercase tracking-[0.18em] text-sm md:text-base font-medium mb-3">
-                {slides[i].eyebrow}
-              </p>
-              <h1 className="font-serif font-bold leading-[1.05] text-4xl md:text-5xl lg:text-6xl mb-4">
-                {slides[i].titleLines.map((line, k) => (
-                  <span key={k}>
-                    {line}
-                    {k < slides[i].titleLines.length - 1 && <br />}
-                  </span>
-                ))}
-              </h1>
-              <p className="text-white/90 text-sm md:text-base mb-6">
-                {slides[i].desc}
-              </p>
-              <div className="flex justify-center">
-                <a
-                  href={slides[i].ctaHref}
-                  className="inline-flex items-center justify-center rounded-md px-6 py-3 bg-white text-ink font-semibold hover:bg-surf transition"
-                >
-                  {slides[i].ctaText}
-                </a>
-              </div>
+        {/* Soft top gradient shadow (sits BEHIND navbar) */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent"
+        />
+
+        {/* Content (above gradient, below navbar which is z-50) */}
+        <div className="relative z-10 flex h-full items-center justify-center">
+          <div className="container-tight text-center text-white">
+            <p className="text-xs font-semibold tracking-wider uppercase drop-shadow">
+              {SLIDES[index].eyebrow}
+            </p>
+            <h1 className="mt-2 text-3xl md:text-5xl font-semibold tracking-tight drop-shadow">
+              {SLIDES[index].title}
+            </h1>
+            <p className="mt-3 text-base md:text-lg text-white/90 drop-shadow">
+              {SLIDES[index].subtitle}
+            </p>
+
+            {/* CTAs centered */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              {SLIDES[index].ctas.map((c) => (
+                <CTA key={c.href} href={c.href} variant={c.variant}>
+                  {c.label}
+                </CTA>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Arrows */}
-        <button
-          onClick={prev}
-          aria-label="Previous slide"
-          className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-ink rounded-full w-10 h-10 grid place-items-center z-20"
-        >
-          ←
-        </button>
-        <button
-          onClick={next}
-          aria-label="Next slide"
-          className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-ink rounded-full w-10 h-10 grid place-items-center z-20"
-        >
-          →
-        </button>
+        {/* Dots */}
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+          <div className="flex items-center gap-2">
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => setIndex(i)}
+                className={`pointer-events-auto h-2.5 w-2.5 rounded-full transition ${
+                  i === index ? "bg-white" : "bg-white/50 hover:bg-white/70"
+                }`}
+                aria-label={`Slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        </div>
 
-        {/* Dots (brand color on active) */}
-        <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-2 z-20">
-          {slides.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => goto(idx)}
-              aria-label={`Go to slide ${idx + 1}`}
-              className={
-                "h-2.5 rounded-full transition-all " +
-                (i === idx
-                  ? "w-6 bg-brand"
-                  : "w-2.5 bg-white/70 hover:bg-white")
-              }
-            />
-          ))}
+        {/* Prev/Next — HIDDEN on mobile, visible from md: up */}
+        <div className="absolute inset-y-0 left-0 right-0 z-10 hidden md:flex items-center justify-between px-2">
+          <button
+            onClick={() => go(-1)}
+            aria-label="Previous slide"
+            className="inline-flex items-center justify-center rounded-full w-11 h-11 bg-black/35 text-white hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <button
+            onClick={() => go(1)}
+            aria-label="Next slide"
+            className="inline-flex items-center justify-center rounded-full w-11 h-11 bg-black/35 text-white hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          >
+            <ChevronRight size={22} />
+          </button>
         </div>
       </div>
     </section>
