@@ -42,7 +42,7 @@ export default function Home() {
       {promoVisible && <PromoBar onClose={() => setPromoVisible(false)} />}
       <SiteNavbar overHero offsetByPromo={promoVisible} />
       <main>
-        <HeroCarousel />
+        {/*<HeroCarousel />*/}
 
         {/* Categories row (no search here anymore) */}
         <CollectionsPills /* show category pills only */ />
