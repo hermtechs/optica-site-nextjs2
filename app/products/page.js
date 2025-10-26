@@ -1,12 +1,20 @@
 // app/products/page.js
-import ProductsSearchPage from "@/components/ProductsSearchPage";
+"use client";
+
+import SiteNavbar from "@/components/SiteNavbar";
+import Footer from "@/components/Footer";
+import ProductsExplorer from "@/components/ProductsExplorer";
+import useProducts from "@/lib/useProducts";
 
 export default function ProductsPage() {
+  const products = useProducts(); // Firestore only
   return (
-    <ProductsSearchPage
-      basePath="/products"
-      title="DamiOptica — Todos los productos / All products"
-      subtitle="Explora todo el catálogo. Busca, ordena y filtra fácilmente."
-    />
+    <>
+      <SiteNavbar overHero={false} offsetByPromo={false} />
+      <main className="container-tight py-8">
+        <ProductsExplorer products={products} />
+      </main>
+      <Footer />
+    </>
   );
 }

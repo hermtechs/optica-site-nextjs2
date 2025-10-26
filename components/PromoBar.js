@@ -1,19 +1,21 @@
+// components/PromoBar.js
 "use client";
-import { X } from "lucide-react";
-import { useLocale } from "@/components/i18n/LocaleProvider";
+import useSiteContent from "@/lib/useSiteContent";
 
 export default function PromoBar({ onClose }) {
-  const { t } = useLocale();
+  const { getStrict } = useSiteContent();
+  const text = getStrict("promo_text"); // "" if not in Firestore
+
+  if (!text) return null; // hide if no content yet
+
   return (
-    <div className="relative z-[60] h-10 w-full bg-brand text-white text-center text-xs flex items-center justify-center">
-      <span className="px-8">{t("promo_text")}</span>
-      <button
-        onClick={onClose}
-        aria-label={t("close_menu")}
-        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-7 h-7 rounded hover:bg-white/15"
-      >
-        <X size={16} />
-      </button>
+    <div className="fixed inset-x-0 top-0 z-50 bg-brand text-white text-sm">
+      <div className="container-tight h-10 flex items-center justify-between">
+        <span className="truncate">{text}</span>
+        <button onClick={onClose} className="hover:opacity-80 px-2">
+          ×
+        </button>
+      </div>
     </div>
   );
 }
