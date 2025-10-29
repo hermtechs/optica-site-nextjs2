@@ -1,12 +1,25 @@
 // app/not-found.js
 "use client";
-import { useEffect, useRef, useState, Suspense } from "react";
+
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ArrowLeft, Home } from "lucide-react";
 import SiteNavbar from "@/components/SiteNavbar";
 import Footer from "@/components/Footer";
 import { useLocale } from "@/components/i18n/LocaleProvider";
+
+// 🔴 Firestore client (safe on client components)
+import { db } from "@/lib/firebaseClient";
+import { collection, onSnapshot } from "firebase/firestore";
+
+function toDateAny(ts) {
+  // Supports Firestore Timestamp, ISO strings, ms numbers
+  if (!ts) return null;
+  if (ts?.toDate) return ts.toDate();
+  const d = new Date(ts);
+  return isNaN(d) ? null : d;
+}
 
 export default function NotFound() {
   const { locale, t } = useLocale();
@@ -15,9 +28,43 @@ export default function NotFound() {
   const [q, setQ] = useState("");
   const inputRef = useRef(null);
 
+  // 🔄 Live products for dynamic links
+  const [items, setItems] = useState([]);
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "products"), (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setItems(list);
+    });
+    return () => unsub();
+  }, []);
+
+  // Build category tally: {name, count}
+  const topCategories = useMemo(() => {
+    const map = new Map();
+    for (const p of items) {
+      const name = p.category_es || p.category_en || p.category || "General";
+      map.set(name, (map.get(name) || 0) + 1);
+    }
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, count]) => ({ name, count }));
+  }, [items]);
+
+  // Featured picks → or latest by createdAt
+  const featuredOrLatest = useMemo(() => {
+    const withDate = (p) => toDateAny(p.createdAt)?.getTime() || 0;
+    let arr = items.filter((p) => p.featured === true);
+    if (arr.length === 0)
+      arr = [...items].sort((a, b) => withDate(b) - withDate(a));
+    else arr = arr.sort((a, b) => withDate(b) - withDate(a));
+    return arr.slice(0, 6);
+  }, [items]);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -97,42 +144,68 @@ export default function NotFound() {
               </Link>
             </div>
 
-            {/* Quick links */}
+            {/* Dynamic quick links */}
             <div className="mt-8">
               <p className="text-xs uppercase tracking-wide text-muted mb-2">
-                {isEN ? "Popular quick links" : "Enlaces rápidos populares"}
+                {isEN ? "Popular categories" : "Categorías populares"}
               </p>
               <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/search?cats=Sunglasses"
-                  className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-brand hover:bg-mist"
-                >
-                  {isEN ? "Sunglasses" : "Gafas de sol"}
-                </Link>
-                <Link
-                  href="/search?cats=Blue-Light%20Glasses"
-                  className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-brand hover:bg-mist"
-                >
-                  {isEN ? "Blue-Light" : "Luz azul"}
-                </Link>
-                <Link
-                  href="/search?q=reading"
-                  className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-brand hover:bg-mist"
-                >
-                  {isEN ? "Reading" : "Lectura"}
-                </Link>
-                <Link
-                  href="/search?q=kids"
-                  className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-brand hover:bg-mist"
-                >
-                  {isEN ? "Kids" : "Niños"}
-                </Link>
-                <Link
-                  href="/search?cats=Contact%20Lenses"
-                  className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-brand hover:bg-mist"
-                >
-                  {isEN ? "Contact lenses" : "Lentes de contacto"}
-                </Link>
+                {topCategories.length === 0 ? (
+                  <>
+                    {/* graceful fallback when no data yet */}
+                    <span className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-muted">
+                      {isEN ? "Loading…" : "Cargando…"}
+                    </span>
+                  </>
+                ) : (
+                  topCategories.map((c) => (
+                    <Link
+                      key={c.name}
+                      href={`/search?cats=${encodeURIComponent(c.name)}`}
+                      className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-brand hover:bg-mist"
+                      title={`${c.name} (${c.count})`}
+                    >
+                      {c.name}
+                      <span className="ml-2 rounded bg-surf px-1.5 py-0.5 text-[11px] text-muted">
+                        {c.count}
+                      </span>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Featured / Latest picks */}
+            <div className="mt-6">
+              <p className="text-xs uppercase tracking-wide text-muted mb-2">
+                {isEN ? "You may be looking for" : "Quizás buscas"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {featuredOrLatest.length === 0 ? (
+                  <span className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-muted">
+                    {isEN ? "Loading…" : "Cargando…"}
+                  </span>
+                ) : (
+                  featuredOrLatest.map((p) => {
+                    const displayName =
+                      p.name_es || p.name_en || p.name || "Producto";
+                    const href = p.slug
+                      ? `/product/${encodeURIComponent(p.slug)}`
+                      : `/search?q=${encodeURIComponent(
+                          displayName
+                        )}&autofocus=1`;
+                    return (
+                      <Link
+                        key={p.id || p.slug || displayName}
+                        href={href}
+                        className="px-3 py-1.5 rounded-md border border-brand/25 text-sm text-ink hover:bg-mist"
+                        title={displayName}
+                      >
+                        {displayName}
+                      </Link>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

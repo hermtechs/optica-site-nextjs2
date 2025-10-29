@@ -1,14 +1,19 @@
+// components/ProductsSearchPage.js
 "use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Fuse from "fuse.js";
-import productsData from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import PromoBar from "@/components/PromoBar";
 import SiteNavbar from "@/components/SiteNavbar";
 import Footer from "@/components/Footer";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
+
+// 🔄 Firestore (live products)
+import { db } from "@/lib/firebaseClient";
+import { collection, onSnapshot } from "firebase/firestore";
 
 /* normalize for typo/diacritic-insensitive search */
 function normalize(str = "") {
@@ -65,26 +70,49 @@ export default function ProductsSearchPage({
   const [maxPrice, setMaxPrice] = useState(maxParam);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // 🔴 NEW: live products from Firestore
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "products"), (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setItems(list);
+    });
+    return () => unsub();
+  }, []);
+
   const inputRef = useRef(null);
   const headerRef = useRef(null);
 
-  // derive categories
+  // derive categories (use localized or base category)
   const categories = useMemo(() => {
-    const set = new Set(productsData.map((p) => p.category).filter(Boolean));
+    const set = new Set();
+    items.forEach((p) =>
+      set.add(p.category_es || p.category_en || p.category || "General")
+    );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, []);
+  }, [items]);
 
-  // index for Fuse
+  // Build index for Fuse (with localized fallbacks), but DO NOT change your UI structure
   const indexItems = useMemo(
     () =>
-      productsData.map((p) => ({
-        ...p,
-        iName: normalize(p.name),
-        iShort: normalize(p.shortDesc || ""),
-        iLong: normalize(p.longDesc || ""),
-        iCat: normalize(p.category || ""),
-      })),
-    []
+      items.map((p) => {
+        const name = p.name_es || p.name_en || p.name || "";
+        const short = p.shortDesc_es || p.shortDesc_en || p.shortDesc || "";
+        const long = p.longDesc_es || p.longDesc_en || p.longDesc || "";
+        const cat = p.category_es || p.category_en || p.category || "";
+        return {
+          ...p,
+          // Derived (used for filter/search, UI still reads original fields as before)
+          _name: name,
+          _category: cat,
+          iName: normalize(name),
+          iShort: normalize(short),
+          iLong: normalize(long),
+          iCat: normalize(cat),
+        };
+      }),
+    [items]
   );
 
   const fuse = useMemo(
@@ -129,13 +157,18 @@ export default function ProductsSearchPage({
       minPrice,
       maxPrice,
     });
-    window.history.replaceState(null, "", url);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", url);
+    }
   }, [q, sort, selectedCats, minPrice, maxPrice, basePath]);
 
   // search → filter → sort
   const searched = useMemo(() => {
     const query = normalize(q);
-    if (!query) return indexItems.map((p) => ({ item: p, score: 0.9 })); // show ALL by default
+    if (!query) {
+      // show ALL by default
+      return indexItems.map((p) => ({ item: p, score: 0.9 }));
+    }
     return fuse
       .search(query)
       .map((r) => ({ item: r.item, score: r.score ?? 1 }));
@@ -147,7 +180,8 @@ export default function ProductsSearchPage({
     return searched
       .map((r) => r.item)
       .filter((p) => {
-        if (selectedCats.size && !selectedCats.has(p.category)) return false;
+        // category filter uses derived _category so localized works
+        if (selectedCats.size && !selectedCats.has(p._category)) return false;
         if (typeof p.price === "number" && (p.price < min || p.price > max))
           return false;
         return true;
@@ -164,10 +198,14 @@ export default function ProductsSearchPage({
         arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
         break;
       case "nameAsc":
-        arr.sort((a, b) => a.name.localeCompare(b.name));
+        // try localized name, then fallback
+        const getName = (p) =>
+          p.name_es || p.name_en || p.name || p._name || "";
+        arr.sort((a, b) => getName(a).localeCompare(getName(b)));
         break;
       default:
-        break; // featured: original order
+        // "featured" keeps incoming order (onSnapshot order) – same behavior as before
+        break;
     }
     return arr;
   }, [filtered, sort]);
@@ -175,7 +213,13 @@ export default function ProductsSearchPage({
   const suggestion = useMemo(() => {
     if (!q.trim() || searched.length === 0) return null;
     const best = searched[0];
-    return best.score > 0.5 ? best.item.name : null;
+    // prefer localized name if available
+    const bestName =
+      best.item.name_es ||
+      best.item.name_en ||
+      best.item.name ||
+      best.item._name;
+    return best.score > 0.5 ? bestName : null;
   }, [q, searched]);
 
   const toggleCat = (c) =>
@@ -210,7 +254,7 @@ export default function ProductsSearchPage({
           >
             <div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-wide text-ink">
-                DamiOptica — Todos los productos / All products
+                {title || "DamiOptica — Todos los productos / All products"}
               </h1>
               <p className="text-sm text-muted mt-1">
                 {subtitle || t("search_sub")}
@@ -370,7 +414,7 @@ export default function ProductsSearchPage({
           ) : (
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {sorted.map((p) => (
-                <ProductCard key={p.slug} product={p} />
+                <ProductCard key={p.id || p.slug} product={p} />
               ))}
             </div>
           )}
