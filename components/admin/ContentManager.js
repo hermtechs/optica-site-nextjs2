@@ -14,43 +14,64 @@ export default function ContentManager() {
   const [lang, setLang] = useState("es"); // "es" | "en"
 
   const [content, setContent] = useState({
-    promo_text_es: "¡La mejor oferta de hoy! ¡COMPRA AHORA!",
-    promo_text_en: "Today’s best deal! SHOP NOW!",
-    about_title_es: "Sobre DamiOptica",
-    about_title_en: "About DamiOptica",
-    about_body_es:
-      "Somos especialistas en salud visual y monturas modernas. Pruebas de la vista, lentes personalizados y atención cercana.",
-    about_body_en:
-      "We specialize in eye health and modern frames. Eye exams, custom lenses, and friendly care.",
+    // Promo
+    promo_text_es: "",
+    promo_text_en: "",
+
+    // About page (you already had)
+    about_title_es: "",
+    about_title_en: "",
+    about_body_es: "",
+    about_body_en: "",
     about_image: "/images/about.jpg",
-    home_about_title_es: "Cuidado visual con estilo",
-    home_about_title_en: "Eye care, styled",
-    home_about_body_es:
-      "Desde monturas clásicas hasta piezas audaces: calidad, comodidad y asesoría profesional.",
-    home_about_body_en:
-      "From classic frames to bold pieces—quality, comfort, and professional guidance.",
+
+    // Home > About block (you already had)
+    home_about_title_es: "",
+    home_about_title_en: "",
+    home_about_body_es: "",
+    home_about_body_en: "",
     home_about_image: "/images/home-about.jpg",
-    eye_title_es: "Exámenes de la vista",
-    eye_title_en: "Eye Tests",
-    eye_body_es:
-      "Realizamos pruebas completas con equipos modernos. Haz tu chequeo anual con nosotros.",
-    eye_body_en:
-      "We perform comprehensive eye tests with modern equipment. Book your yearly check-up.",
+
+    // Home > Eye test block (you already had)
+    eye_title_es: "",
+    eye_title_en: "",
+    eye_body_es: "",
+    eye_body_en: "",
     eye_image: "/images/eye-exam.jpg",
-    contact_phone: "+57 300 000 0000",
-    contact_email: "hola@damioptica.com",
-    contact_address_es: "Calle 123 #45–67, Bogotá, Colombia",
-    contact_address_en: "123 Main St, Bogotá, Colombia",
-    contact_hours_es: "Lun–Sáb 9:00–18:00",
-    contact_hours_en: "Mon–Sat 9:00–18:00",
-    footer_tagline_es: "Visión clara, estilo auténtico.",
-    footer_tagline_en: "Clear vision, authentic style.",
+
+    // Contact / Footer (you already had)
+    contact_phone: "",
+    contact_email: "",
+    contact_address_es: "",
+    contact_address_en: "",
+    contact_hours_es: "",
+    contact_hours_en: "",
+    footer_tagline_es: "",
+    footer_tagline_en: "",
+
+    // NEW: Our Story page
+    story_title_es: "",
+    story_title_en: "",
+    story_body_es: "",
+    story_body_en: "",
+    story_image: "/images/story-hero.jpg",
+    story_gallery: [], // array of URLs
+
+    // NEW: Eye Tests FULL page
+    eye_page_title_es: "",
+    eye_page_title_en: "",
+    eye_page_body_es: "",
+    eye_page_body_en: "",
+    eye_page_image: "/images/eye-tests-hero.jpg",
+    eye_services_es: "", // multiline (split by \n on the page)
+    eye_services_en: "",
+    eye_price_text_es: "",
+    eye_price_text_en: "",
   });
 
   useEffect(() => {
     (async () => {
-      const refDoc = doc(db, "site", "content");
-      const snap = await getDoc(refDoc);
+      const snap = await getDoc(doc(db, "site", "content"));
       if (snap.exists()) setContent((c) => ({ ...c, ...snap.data() }));
     })();
   }, []);
@@ -116,40 +137,37 @@ export default function ContentManager() {
             onClick={save}
             disabled={saving}
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? "Saving…" : "Save all"}
           </button>
         </div>
       </div>
 
-      {/* Promo (white) */}
+      {/* Promo */}
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Promo bar</h4>
         <input
           className={inputCls}
-          value={content[L("promo_text")]}
+          value={content[L("promo_text")] ?? ""}
           onChange={(e) => setL("promo_text", e.target.value)}
         />
       </section>
 
-      {/* About page (soft green) */}
+      {/* About page */}
       <section className="rounded-2xl border border-emerald-200 bg-[#F4FBF7] p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">About page</h4>
-
         <label className="text-sm text-ink/80">Title</label>
         <input
           className={inputCls}
-          value={content[L("about_title")]}
+          value={content[L("about_title")] ?? ""}
           onChange={(e) => setL("about_title", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Body</label>
         <textarea
           rows={4}
           className={inputCls}
-          value={content[L("about_body")]}
+          value={content[L("about_body")] ?? ""}
           onChange={(e) => setL("about_body", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Image</label>
         <div className="flex items-center gap-2">
           <input
@@ -177,25 +195,22 @@ export default function ContentManager() {
         </div>
       </section>
 
-      {/* Home: About (soft blue) */}
+      {/* Home — About block */}
       <section className="rounded-2xl border border-sky-200 bg-[#F7FBFF] p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Home — About block</h4>
-
         <label className="text-sm text-ink/80">Title</label>
         <input
           className={inputCls}
-          value={content[L("home_about_title")]}
+          value={content[L("home_about_title")] ?? ""}
           onChange={(e) => setL("home_about_title", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Body</label>
         <textarea
           rows={4}
           className={inputCls}
-          value={content[L("home_about_body")]}
+          value={content[L("home_about_body")] ?? ""}
           onChange={(e) => setL("home_about_body", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Image</label>
         <div className="flex items-center gap-2">
           <input
@@ -223,48 +238,42 @@ export default function ContentManager() {
         </div>
       </section>
 
-      {/* Eye Test (soft violet) */}
+      {/* Home — Eye test block */}
       <section className="rounded-2xl border border-violet-200 bg-[#F7F4FF] p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Home — Eye test</h4>
-
         <label className="text-sm text-ink/80">Title</label>
         <input
           className={inputCls}
-          value={content[L("eye_title")]}
+          value={content[L("eye_title")] ?? ""}
           onChange={(e) => setL("eye_title", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Body</label>
         <textarea
           rows={4}
           className={inputCls}
-          value={content[L("eye_body")]}
+          value={content[L("eye_body")] ?? ""}
           onChange={(e) => setL("eye_body", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Image</label>
-        <div className="flex items-center gap-2">
-          <input
-            className={`${inputCls} flex-1`}
-            value={content.eye_image || ""}
-            onChange={(e) =>
-              setContent((c) => ({ ...c, eye_image: e.target.value }))
-            }
-            placeholder="/images/eye-exam.jpg or https://…"
-          />
-        </div>
+        <input
+          className={inputCls}
+          value={content.eye_image || ""}
+          onChange={(e) =>
+            setContent((c) => ({ ...c, eye_image: e.target.value }))
+          }
+          placeholder="/images/eye-exam.jpg or https://…"
+        />
       </section>
 
-      {/* Contact & Footer (white) */}
+      {/* Contact & Footer */}
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Contact & Footer</h4>
-
         <div className="grid md:grid-cols-2 gap-3">
           <div>
             <label className="text-sm text-ink/80">Phone</label>
             <input
               className={inputCls}
-              value={content.contact_phone}
+              value={content.contact_phone || ""}
               onChange={(e) =>
                 setContent((c) => ({ ...c, contact_phone: e.target.value }))
               }
@@ -275,33 +284,172 @@ export default function ContentManager() {
             <input
               type="email"
               className={inputCls}
-              value={content.contact_email}
+              value={content.contact_email || ""}
               onChange={(e) =>
                 setContent((c) => ({ ...c, contact_email: e.target.value }))
               }
             />
           </div>
         </div>
-
         <label className="text-sm text-ink/80">Address</label>
         <input
           className={inputCls}
-          value={content[L("contact_address")]}
+          value={content[L("contact_address")] ?? ""}
           onChange={(e) => setL("contact_address", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Hours</label>
         <input
           className={inputCls}
-          value={content[L("contact_hours")]}
+          value={content[L("contact_hours")] ?? ""}
           onChange={(e) => setL("contact_hours", e.target.value)}
         />
-
         <label className="text-sm text-ink/80">Footer tagline</label>
         <input
           className={inputCls}
-          value={content[L("footer_tagline")]}
+          value={content[L("footer_tagline")] ?? ""}
           onChange={(e) => setL("footer_tagline", e.target.value)}
+        />
+      </section>
+
+      {/* NEW — Our Story page (soft rose) */}
+      <section className="rounded-2xl border border-rose-200 bg-[#FFF7F8] p-4 shadow-sm grid gap-3">
+        <h4 className="text-base font-semibold text-ink">Our Story page</h4>
+
+        <label className="text-sm text-ink/80">Title</label>
+        <input
+          className={inputCls}
+          value={content[L("story_title")] ?? ""}
+          onChange={(e) => setL("story_title", e.target.value)}
+          placeholder={lang === "es" ? "Nuestra historia" : "Our Story"}
+        />
+
+        <label className="text-sm text-ink/80">Body</label>
+        <textarea
+          rows={5}
+          className={inputCls}
+          value={content[L("story_body")] ?? ""}
+          onChange={(e) => setL("story_body", e.target.value)}
+          placeholder={
+            lang === "es"
+              ? "Cuenta tu misión, valores y trayectoria…"
+              : "Tell your mission, values, and journey…"
+          }
+        />
+
+        <label className="text-sm text-ink/80">Hero image</label>
+        <div className="flex items-center gap-2">
+          <input
+            className={`${inputCls} flex-1`}
+            value={content.story_image || ""}
+            onChange={(e) =>
+              setContent((c) => ({ ...c, story_image: e.target.value }))
+            }
+            placeholder="/images/story-hero.jpg or https://…"
+          />
+          <label className="btn-outline cursor-pointer">
+            Upload
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const url = await upload(f, "site");
+                setContent((c) => ({ ...c, story_image: url }));
+              }}
+            />
+          </label>
+        </div>
+
+        <label className="text-sm text-ink/80">
+          Gallery (comma separated or upload)
+        </label>
+        <textarea
+          rows={3}
+          className={inputCls}
+          value={(content.story_gallery || []).join(", ")}
+          onChange={(e) =>
+            setContent((c) => ({
+              ...c,
+              story_gallery: e.target.value
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+            }))
+          }
+        />
+        <label className="btn-outline cursor-pointer w-fit">
+          Upload images
+          <input
+            multiple
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const files = Array.from(e.target.files || []);
+              const urls = [];
+              for (const f of files) urls.push(await upload(f, "site"));
+              setContent((c) => ({
+                ...c,
+                story_gallery: [...(c.story_gallery || []), ...urls],
+              }));
+            }}
+          />
+        </label>
+      </section>
+
+      {/* NEW — Eye Tests FULL page (soft indigo) */}
+      <section className="rounded-2xl border border-indigo-200 bg-[#F6F7FF] p-4 shadow-sm grid gap-3">
+        <h4 className="text-base font-semibold text-ink">Eye Tests page</h4>
+
+        <label className="text-sm text-ink/80">Title</label>
+        <input
+          className={inputCls}
+          value={content[L("eye_page_title")] ?? ""}
+          onChange={(e) => setL("eye_page_title", e.target.value)}
+          placeholder={lang === "es" ? "Exámenes de la vista" : "Eye Tests"}
+        />
+
+        <label className="text-sm text-ink/80">Body</label>
+        <textarea
+          rows={5}
+          className={inputCls}
+          value={content[L("eye_page_body")] ?? ""}
+          onChange={(e) => setL("eye_page_body", e.target.value)}
+        />
+
+        <label className="text-sm text-ink/80">Hero image</label>
+        <input
+          className={inputCls}
+          value={content.eye_page_image || ""}
+          onChange={(e) =>
+            setContent((c) => ({ ...c, eye_page_image: e.target.value }))
+          }
+          placeholder="/images/eye-tests-hero.jpg or https://…"
+        />
+
+        <label className="text-sm text-ink/80">
+          Services (one per line) — shown as bullet list
+        </label>
+        <textarea
+          rows={4}
+          className={inputCls}
+          value={content[L("eye_services")] ?? ""}
+          onChange={(e) => setL("eye_services", e.target.value)}
+          placeholder={
+            lang === "es"
+              ? "Agudeza visual\nRetinoscopía\n…"
+              : "Visual acuity\nRetinoscopy\n…"
+          }
+        />
+
+        <label className="text-sm text-ink/80">Price text (optional)</label>
+        <input
+          className={inputCls}
+          value={content[L("eye_price_text")] ?? ""}
+          onChange={(e) => setL("eye_price_text", e.target.value)}
+          placeholder={lang === "es" ? "Desde $XX.XXX" : "From $XX.XX"}
         />
       </section>
 
