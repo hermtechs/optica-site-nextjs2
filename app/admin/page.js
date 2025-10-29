@@ -15,9 +15,7 @@ export default function AdminPage() {
       <Suspense fallback={null}>
         <SiteNavbar overHero={false} offsetByPromo={false} />
       </Suspense>
-
       <AdminApp />
-
       <Suspense fallback={null}>
         <Footer />
       </Suspense>

@@ -1,183 +1,162 @@
+// components/CollectionsPills.js
 "use client";
-import { useEffect, useRef, useState } from "react";
 
-const DEFAULTS = [
-  { label: "MEN'S GLASSES", href: "/category/mens-glasses" },
-  { label: "WOMEN'S GLASSES", href: "/category/womens-glasses" },
-  { label: "KIDS' GLASSES", href: "/category/kids-glasses" },
-  { label: "SUNGLASSES", href: "/category/sunglasses" },
-  {
-    label: "PRESCRIPTION SUNGLASSES",
-    href: "/category/prescription-sunglasses",
-  },
-  { label: "CONTACT LENSES", href: "/category/contact-lenses" },
-  { label: "BLUE-LIGHT GLASSES", href: "/category/blue-light" },
-  { label: "SPORTS & SAFETY", href: "/category/sports-safety" },
-  { label: "NEW ARRIVALS", href: "/category/new" },
-  { label: "BEST SELLERS", href: "/category/best-sellers" },
-  { label: "ACCESSORIES", href: "/category/accessories" },
-  { label: "BOOK EYE EXAM", href: "/book/exam" },
-];
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { db } from "@/lib/firebaseClient";
+import { collection, onSnapshot } from "firebase/firestore";
+import { useLocale } from "@/components/i18n/LocaleProvider";
+import { ArrowRight } from "lucide-react";
 
-/**
- * Props:
- * - onSearch?: (query: string) => void
- * - productCount?: number
- * - categories?: {label, href}[]
- * - title?: string
- */
-export default function CollectionsPills({
-  title = "Shop by Category",
-  categories = DEFAULTS,
-  onSearch,
-  productCount,
-}) {
-  const [q, setQ] = useState("");
-  const [expanded, setExpanded] = useState(false);
-  const [multiRow, setMultiRow] = useState(false);
-  const [rowHeight, setRowHeight] = useState(0);
-  const [isWide, setIsWide] = useState(false); // >=500px → show all
+export default function CollectionsPills() {
+  const { t } = useLocale();
+  const [items, setItems] = useState([]);
 
-  const gridRef = useRef(null);
-
-  // Tell parent whenever query changes
+  // Live products (to build categories dynamically)
   useEffect(() => {
-    onSearch?.(q);
-  }, [q, onSearch]);
-
-  // ≥ 500px → always show all (no toggle)
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 500px)");
-    const update = () => setIsWide(mq.matches);
-    update();
-    mq.addEventListener?.("change", update);
-    mq.addListener?.(update);
-    return () => {
-      mq.removeEventListener?.("change", update);
-      mq.removeListener?.(update);
-    };
+    const unsub = onSnapshot(collection(db, "products"), (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setItems(list);
+    });
+    return () => unsub();
   }, []);
 
-  // On small screens only: detect if pills wrap to more than one row
-  useEffect(() => {
-    if (isWide) {
-      setMultiRow(false);
-      setExpanded(true);
-      return;
-    }
-    const el = gridRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const pills = el.querySelectorAll('a[data-pill="true"]');
-      if (!pills.length) {
-        setMultiRow(false);
-        setRowHeight(0);
-        return;
+  // Build categories map: { name, count, cover }
+  const categories = useMemo(() => {
+    const map = new Map();
+    for (const p of items) {
+      const name = p.category_es || p.category_en || p.category || "General";
+      if (!map.has(name)) {
+        map.set(name, {
+          name,
+          count: 0,
+          cover: p.image || (Array.isArray(p.gallery) ? p.gallery[0] : ""),
+        });
       }
-      const firstTop = pills[0].offsetTop;
-      let firstRowBottom = 0,
-        lastTop = firstTop;
-
-      pills.forEach((p) => {
-        const top = p.offsetTop,
-          bottom = top + p.offsetHeight;
-        if (top === firstTop && bottom > firstRowBottom)
-          firstRowBottom = bottom;
-        lastTop = top;
-      });
-
-      setRowHeight(firstRowBottom - firstTop);
-      const wraps = lastTop > firstTop;
-      setMultiRow(wraps);
-      if (!wraps) setExpanded(false);
+      const entry = map.get(name);
+      entry.count += 1;
+      // prefer first available image as cover
+      if (
+        !entry.cover &&
+        (p.image || (Array.isArray(p.gallery) && p.gallery[0]))
+      ) {
+        entry.cover = p.image || p.gallery[0];
+      }
+    }
+    // Sort by popularity; keep all for pills, but cap grid to 12
+    const arr = Array.from(map.values()).sort((a, b) => b.count - a.count);
+    return {
+      pills: arr,
+      grid: arr.slice(0, 12),
     };
+  }, [items]);
 
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    el.querySelectorAll('a[data-pill="true"]').forEach((n) => ro.observe(n));
-    return () => ro.disconnect();
-  }, [categories, isWide]);
-
-  const showCollapsed = !isWide && multiRow && !expanded;
+  const pillBase =
+    "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors";
+  const pillIdle =
+    "bg-white text-ink ring-1 ring-brand/20 hover:ring-brand/40 shadow";
+  const sectionTitle = t("shop_by_category") || "Comprar por categoría";
 
   return (
-    <section className="bg-white">
-      <div className="container-tight py-10 md:py-12">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg md:text-xl font-semibold text-ink">
-              {title}
-            </h2>
-            {typeof productCount === "number" && (
-              <span className="text-xs px-2 py-1 rounded bg-mist text-brand border border-brand/20">
-                {productCount} results
-              </span>
-            )}
-          </div>
+    <section className="relative py-10">
+      {/* soft background */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-surf/70 to-white" />
 
-          <div className="relative w-full sm:w-80">
-            <input
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search products…"
-              className="w-full rounded-md border border-brand/25 bg-mist px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/40"
-            />
+      <div className="container-tight">
+        {/* Heading */}
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold text-ink">{sectionTitle}</h2>
+            <p className="text-muted">
+              {t("feature_subtitle") ||
+                "Selección curada: líneas limpias y comodidad diaria."}
+            </p>
           </div>
+          <Link
+            href="/categories"
+            className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-brand/20 bg-white px-3 py-2 text-sm text-ink hover:border-brand/40 hover:bg-mist"
+          >
+            {t("shop_all") || "Ver Todo"}
+            <ArrowRight size={16} />
+          </Link>
         </div>
 
-        {/* Pills grid */}
-        <div
-          className={
-            "relative transition-[height] duration-300 " +
-            (showCollapsed ? "" : "h-auto")
-          }
-          style={
-            showCollapsed
-              ? {
-                  height: rowHeight ? `${rowHeight}px` : undefined,
-                  overflow: "hidden",
-                }
-              : undefined
-          }
-        >
-          {showCollapsed && (
-            <div className="pointer-events-none absolute inset-x-0 -bottom-0 h-8 bg-gradient-to-b from-transparent to-white" />
-          )}
-
-          <div
-            ref={gridRef}
-            className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]"
-          >
-            {categories.map((it) => (
-              <a
-                key={it.label}
-                data-pill="true"
-                href={it.href || "#"}
-                title={it.label}
-                className="group inline-flex items-center justify-center rounded-md border border-brand/30 bg-white px-4 py-3 text-[0.92rem] font-semibold text-brand shadow-card hover:bg-mist focus:outline-none focus:ring-2 focus:ring-brand/40 transition truncate"
+        {/* Pills row (always visible, scrollable on mobile) */}
+        <div className="-mx-4 mb-6 overflow-x-auto px-4 pb-1">
+          <div className="flex w-max gap-2">
+            <Link
+              href="/products"
+              className={`${pillBase} bg-brand text-white shadow`}
+            >
+              {t("shop_all") || "Ver Todo"}
+            </Link>
+            {categories.pills.map((c) => (
+              <Link
+                key={c.name}
+                href={`/categories?cat=${encodeURIComponent(c.name)}`}
+                className={`${pillBase} ${pillIdle}`}
+                title={`${c.name} (${c.count})`}
               >
-                <span className="truncate">{it.label}</span>
-              </a>
+                <span className="truncate">{c.name}</span>
+                <span className="ml-2 rounded-full bg-surf px-1.5 py-0.5 text-xs text-muted">
+                  {c.count}
+                </span>
+              </Link>
             ))}
           </div>
         </div>
 
-        {/* Mobile-only toggle when wrapping occurs */}
-        {!isWide && multiRow && (
-          <div className="flex justify-center mt-8">
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="btn-outline px-5 py-2"
+        {/* Grid cards (md+ only) */}
+        <div className="hidden md:grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {categories.grid.map((c) => (
+            <Link
+              key={c.name}
+              href={`/categories?cat=${encodeURIComponent(c.name)}`}
+              className="group relative overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-brand/10 transition hover:shadow-md hover:ring-brand/20"
             >
-              {expanded ? "Show less" : "Show more"}
-            </button>
-          </div>
-        )}
+              {/* gentle corner waves */}
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand/5 blur-0 transition group-hover:bg-brand/10" />
+              <div className="pointer-events-none absolute -left-8 -bottom-12 h-28 w-28 rounded-full bg-brand/5 transition group-hover:bg-brand/10" />
+
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full ring-1 ring-brand/10">
+                  {c.cover ? (
+                    <img
+                      src={c.cover}
+                      alt={c.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-surf text-sm text-muted">
+                      {c.name[0]?.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-base font-semibold text-ink">
+                    {c.name}
+                  </div>
+                  <div className="text-sm text-muted">{c.count} items</div>
+                </div>
+                <ArrowRight
+                  size={18}
+                  className="ml-auto text-muted transition group-hover:translate-x-0.5 group-hover:text-ink"
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Mobile “View all” button */}
+        <div className="mt-6 sm:hidden">
+          <Link
+            href="/categories"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand/20 bg-white px-4 py-2.5 text-sm text-ink hover:border-brand/40 hover:bg-mist"
+          >
+            {t("shop_all") || "Ver Todo"}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -2,66 +2,180 @@
 "use client";
 
 import Link from "next/link";
-import { useLocale } from "@/components/i18n/LocaleProvider";
 import { FaWhatsapp } from "react-icons/fa";
+import { useMemo } from "react";
+import useSiteContent from "@/lib/useSiteContent"; // to pull phone for WA link
 
-function useText(product) {
-  const { locale, t } = useLocale();
-  const lang = (locale || "es").startsWith("en") ? "en" : "es";
-  const name = product[`name_${lang}`] || "";
-  const shortDesc = product[`shortDesc_${lang}`] || "";
-  const category = product[`category_${lang}`] || "";
-  return { t, lang, name, shortDesc, category };
+function formatCOP(n) {
+  if (typeof n !== "number") return n;
+  try {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `COP ${Math.round(n).toLocaleString("es-CO")}`;
+  }
+}
+
+function waLink(product, phone) {
+  const base = "https://wa.me/";
+  const digits = (phone || "").replace(/\D+/g, "");
+  const url = typeof window !== "undefined" ? window.location.origin : "";
+  const pUrl = product?.slug ? `${url}/product/${product.slug}` : url;
+  const text = encodeURIComponent(
+    `Hola, quiero pedir este producto:\n• ${
+      product.name_es || product.name_en || product.name
+    }\n• ${formatCOP(product.price)}\n${pUrl}`
+  );
+  return `${base}${digits ? digits : ""}?text=${text}`;
 }
 
 export default function ProductCard({ product }) {
-  const { t, lang, name, shortDesc } = useText(product);
-  const price = Number(product.price || 0);
+  const { content } = useSiteContent();
+  const hasDiscount =
+    typeof product?.discount === "number" && product.discount > 0;
+  const isFeatured = product?.featured === true;
+  const isNew = product?.isNew === true;
 
-  const waText = encodeURIComponent(
-    `${name}\n${shortDesc ? shortDesc + "\n" : ""}Price: $${price.toFixed(
-      2
-    )}\nLink: ${
-      typeof window !== "undefined" ? window.location.origin : ""
-    }/product/${product.slug}`
-  );
-  const waHref = `https://wa.me/?text=${waText}`;
+  const { finalPrice } = useMemo(() => {
+    if (!hasDiscount) return { finalPrice: product.price };
+    const discounted = Math.max(
+      0,
+      Math.round((product.price || 0) * (1 - product.discount / 100))
+    );
+    return { finalPrice: discounted };
+  }, [product, hasDiscount]);
+
+  const name =
+    product?.name_es ||
+    product?.name_en ||
+    product?.name ||
+    "Producto sin nombre";
+  const category =
+    product?.category_es || product?.category_en || product?.category || "";
+  const slug = product?.slug?.trim();
+
+  const cardDisabled = !slug; // avoid 404 if product has no slug yet
+  const wa = waLink(product, content?.contact_phone);
 
   return (
-    <div className="group rounded-2xl border bg-white overflow-hidden">
-      <div className="aspect-[4/3] w-full overflow-hidden bg-mist">
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div className="h-full w-full" />
-        )}
-      </div>
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-ink font-medium line-clamp-1">{name}</h3>
-          {product.discount ? (
-            <span className="text-xs rounded bg-red-50 text-red-700 px-2 py-0.5">
-              -{product.discount}%
-            </span>
-          ) : null}
+    <div
+      className="
+        group relative overflow-hidden rounded-xl bg-white
+        shadow-[0_1px_12px_rgba(0,0,0,0.06)] ring-1 ring-black/5
+        transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.10)]
+      "
+    >
+      {/* Image (photo-first) */}
+      {cardDisabled ? (
+        <div className="relative block">
+          <div className="relative aspect-[4/3] overflow-hidden">
+            {(isFeatured || isNew || hasDiscount) && (
+              <div className="absolute left-3 top-3 z-10 flex gap-2">
+                {isFeatured && (
+                  <span className="rounded-full bg-brand px-2 py-1 text-xs font-semibold text-white shadow">
+                    Destacado
+                  </span>
+                )}
+                {isNew && (
+                  <span className="rounded-full bg-emerald-500 px-2 py-1 text-xs font-semibold text-white shadow">
+                    Nuevo
+                  </span>
+                )}
+                {hasDiscount && (
+                  <span className="rounded-full bg-rose-500 px-2 py-1 text-xs font-semibold text-white shadow">
+                    -{product.discount}%
+                  </span>
+                )}
+              </div>
+            )}
+            <img
+              src={product?.image}
+              alt={name}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
         </div>
-        <p className="mt-1 text-sm text-ink/70 line-clamp-2">{shortDesc}</p>
-        <div className="mt-2 flex items-center justify-between">
-          <div className="text-ink font-semibold">${price.toFixed(2)}</div>
+      ) : (
+        <Link href={`/product/${slug}`} className="relative block">
+          <div className="relative aspect-[4/3] overflow-hidden">
+            {(isFeatured || isNew || hasDiscount) && (
+              <div className="absolute left-3 top-3 z-10 flex gap-2">
+                {isFeatured && (
+                  <span className="rounded-full bg-brand px-2 py-1 text-xs font-semibold text-white shadow">
+                    Destacado
+                  </span>
+                )}
+                {isNew && (
+                  <span className="rounded-full bg-emerald-500 px-2 py-1 text-xs font-semibold text-white shadow">
+                    Nuevo
+                  </span>
+                )}
+                {hasDiscount && (
+                  <span className="rounded-full bg-rose-500 px-2 py-1 text-xs font-semibold text-white shadow">
+                    -{product.discount}%
+                  </span>
+                )}
+              </div>
+            )}
+            <img
+              src={product?.image}
+              alt={name}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+          </div>
+        </Link>
+      )}
 
+      {/* Minimal content under photo */}
+      <div className="p-4">
+        {!!category && (
+          <div className="mb-1 text-xs uppercase tracking-wide text-muted">
+            {category}
+          </div>
+        )}
+        <div className="line-clamp-1 text-lg font-semibold text-ink">
+          {name}
+        </div>
+
+        <div className="mt-2 flex items-center gap-2">
+          <div className="text-base font-bold text-ink">
+            {formatCOP(finalPrice)}
+          </div>
+          {hasDiscount && (
+            <div className="text-sm text-muted line-through">
+              {formatCOP(product.price)}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
           <a
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-[#25D366] text-white hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#25D366]/40"
-            href={waHref}
+            href={wa}
             target="_blank"
             rel="noopener noreferrer"
+            className="
+              inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2
+              text-sm font-semibold text-white shadow-sm transition
+              hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#25D366]/50
+            "
           >
-            <FaWhatsapp />
-            {t("order_whatsapp")}
+            <FaWhatsapp size={16} />
+            <span>Order on WhatsApp</span>
           </a>
+
+          {!cardDisabled && (
+            <Link
+              href={`/product/${slug}`}
+              className="ml-auto text-sm font-medium text-brand hover:underline"
+            >
+              Ver detalles
+            </Link>
+          )}
         </div>
       </div>
     </div>
