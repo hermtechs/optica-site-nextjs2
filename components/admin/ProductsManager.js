@@ -17,41 +17,51 @@ import ProductCard from "@/components/ProductCard";
 
 const empty = {
   slug: "",
+  // base fields (backward compatible)
   name: "",
-  price: 0,
-  image: "",
   category: "",
-  category_es: "",
-  category_en: "",
-  name_es: "",
-  name_en: "",
   shortDesc: "",
   longDesc: "",
-  shortDesc_es: "",
-  longDesc_es: "",
+  // bilingual fields
+  name_en: "",
+  name_es: "",
+  category_en: "",
+  category_es: "",
   shortDesc_en: "",
+  shortDesc_es: "",
   longDesc_en: "",
+  longDesc_es: "",
+  // misc
+  price: 0,
+  image: "",
   gallery: [],
   colors: ["#111827", "#6b7280", "#d1d5db"],
   features: [{ title: "Frame", desc: "Light, durable build." }],
   featured: false,
-  isNew: false,
   discount: null,
   discountEnd: null,
-  categoryKey: "",
 };
 
 const inputCls =
   "block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand/40";
 
-function slugify(s) {
-  return (s || "")
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
+function FieldLabel({ children }) {
+  return <label className="block text-sm text-ink/80 mb-1">{children}</label>;
+}
+
+function LangPair({ label, left, right }) {
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <div>
+        <FieldLabel>{label} (ES)</FieldLabel>
+        {left}
+      </div>
+      <div>
+        <FieldLabel>{label} (EN)</FieldLabel>
+        {right}
+      </div>
+    </div>
+  );
 }
 
 export default function ProductsManager() {
@@ -70,16 +80,6 @@ export default function ProductsManager() {
     });
     return () => unsub();
   }, []);
-
-  const categoryOptions = useMemo(() => {
-    const set = new Set();
-    items.forEach((p) => {
-      if (p.category_es) set.add(p.category_es);
-      if (p.category_en) set.add(p.category_en);
-      if (p.category) set.add(p.category);
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [items]);
 
   const filtered = useMemo(() => {
     const n = q.trim().toLowerCase();
@@ -122,18 +122,8 @@ export default function ProductsManager() {
         ...form,
         price: Number(form.price) || 0,
         createdAt: form.createdAt || serverTimestamp(),
-        updatedAt: serverTimestamp(),
       };
-      // Compute categoryKey (prefer ES, then EN, then generic)
-      const label = data.category_es || data.category_en || data.category || "";
-      data.categoryKey = slugify(label);
       data.gallery = (data.gallery || []).filter(Boolean);
-
-      if (!data.slug) throw new Error("Slug is required.");
-      if (!data.name && !data.name_es && !data.name_en)
-        throw new Error(
-          "At least one name (name, name_es, or name_en) is required."
-        );
 
       if (editing?.id) {
         await updateDoc(doc(db, "products", editing.id), data);
@@ -156,7 +146,7 @@ export default function ProductsManager() {
 
   return (
     <div className="grid gap-6">
-      {/* Controls (section color A) */}
+      {/* Controls */}
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -167,7 +157,7 @@ export default function ProductsManager() {
             style={{ maxWidth: 320 }}
           />
           <button
-            className="btn"
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
             onClick={() => {
               setForm(empty);
               setEditing(null);
@@ -178,7 +168,7 @@ export default function ProductsManager() {
         </div>
       </div>
 
-      {/* Editor (section color B - very light tint via ring only) */}
+      {/* Editor */}
       <form
         onSubmit={handleSubmit}
         className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm grid gap-4"
@@ -187,11 +177,10 @@ export default function ProductsManager() {
           {editing?.id ? "Edit product" : "Create product"}
         </h3>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        {/* ID/slug/price row */}
+        <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm text-ink/80 mb-1">
-              Slug (unique)
-            </label>
+            <FieldLabel>Slug (unique)</FieldLabel>
             <input
               className={inputCls}
               value={form.slug}
@@ -201,9 +190,16 @@ export default function ProductsManager() {
           </div>
 
           <div>
-            <label className="block text-sm text-ink/80 mb-1">
-              Price (COP)
-            </label>
+            <FieldLabel>Category (fallback)</FieldLabel>
+            <input
+              className={inputCls}
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Price</FieldLabel>
             <input
               type="number"
               step="1"
@@ -212,117 +208,118 @@ export default function ProductsManager() {
               onChange={(e) => setForm({ ...form, price: e.target.value })}
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm text-ink/80 mb-1">Name (ES)</label>
+        {/* Names bilingual */}
+        <LangPair
+          label="Name"
+          left={
             <input
               className={inputCls}
               value={form.name_es}
               onChange={(e) => setForm({ ...form, name_es: e.target.value })}
+              placeholder="Nombre (ES)"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm text-ink/80 mb-1">Name (EN)</label>
+          }
+          right={
             <input
               className={inputCls}
               value={form.name_en}
               onChange={(e) => setForm({ ...form, name_en: e.target.value })}
+              placeholder="Name (EN)"
             />
-          </div>
+          }
+        />
 
-          <div>
-            <label className="block text-sm text-ink/80 mb-1">
-              Category (ES)
-            </label>
+        {/* Categories bilingual */}
+        <LangPair
+          label="Category label"
+          left={
             <input
-              list="cats"
               className={inputCls}
               value={form.category_es}
               onChange={(e) =>
                 setForm({ ...form, category_es: e.target.value })
               }
+              placeholder="Categoría (ES)"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm text-ink/80 mb-1">
-              Category (EN)
-            </label>
+          }
+          right={
             <input
-              list="cats"
               className={inputCls}
               value={form.category_en}
               onChange={(e) =>
                 setForm({ ...form, category_en: e.target.value })
               }
+              placeholder="Category (EN)"
             />
-          </div>
-        </div>
+          }
+        />
 
-        <datalist id="cats">
-          {categoryOptions.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
+        {/* Short desc bilingual */}
+        <LangPair
+          label="Short description"
+          left={
+            <textarea
+              rows={2}
+              className={inputCls}
+              value={form.shortDesc_es}
+              onChange={(e) =>
+                setForm({ ...form, shortDesc_es: e.target.value })
+              }
+              placeholder="Descripción corta (ES)"
+            />
+          }
+          right={
+            <textarea
+              rows={2}
+              className={inputCls}
+              value={form.shortDesc_en}
+              onChange={(e) =>
+                setForm({ ...form, shortDesc_en: e.target.value })
+              }
+              placeholder="Short description (EN)"
+            />
+          }
+        />
 
-        <div>
-          <label className="block text-sm text-ink/80 mb-1">
-            Short description (ES)
-          </label>
-          <textarea
-            rows={2}
-            className={inputCls}
-            value={form.shortDesc_es}
-            onChange={(e) => setForm({ ...form, shortDesc_es: e.target.value })}
-          />
-        </div>
+        {/* Long desc bilingual */}
+        <LangPair
+          label="Long description"
+          left={
+            <textarea
+              rows={4}
+              className={inputCls}
+              value={form.longDesc_es}
+              onChange={(e) =>
+                setForm({ ...form, longDesc_es: e.target.value })
+              }
+              placeholder="Descripción larga (ES)"
+            />
+          }
+          right={
+            <textarea
+              rows={4}
+              className={inputCls}
+              value={form.longDesc_en}
+              onChange={(e) =>
+                setForm({ ...form, longDesc_en: e.target.value })
+              }
+              placeholder="Long description (EN)"
+            />
+          }
+        />
 
-        <div>
-          <label className="block text-sm text-ink/80 mb-1">
-            Short description (EN)
-          </label>
-          <textarea
-            rows={2}
-            className={inputCls}
-            value={form.shortDesc_en}
-            onChange={(e) => setForm({ ...form, shortDesc_en: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm text-ink/80 mb-1">
-            Long description (ES)
-          </label>
-          <textarea
-            rows={4}
-            className={inputCls}
-            value={form.longDesc_es}
-            onChange={(e) => setForm({ ...form, longDesc_es: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm text-ink/80 mb-1">
-            Long description (EN)
-          </label>
-          <textarea
-            rows={4}
-            className={inputCls}
-            value={form.longDesc_en}
-            onChange={(e) => setForm({ ...form, longDesc_en: e.target.value })}
-          />
-        </div>
-
+        {/* Images */}
         <div className="grid md:grid-cols-2 gap-4">
-          {/* Main image (section color C - same but visual separation via border) */}
+          {/* Main image */}
           <div className="rounded-xl border border-gray-200 bg-white p-3">
             <div className="text-sm font-medium mb-2">Main image</div>
             {form.image && (
               <img
                 src={form.image}
                 alt=""
-                className="mb-2 h-40 w-full rounded-lg border border-gray-200 object-cover"
+                className="w-full h-40 object-cover rounded-lg mb-2 border border-gray-200"
               />
             )}
             <div className="flex gap-2">
@@ -388,6 +385,7 @@ export default function ProductsManager() {
           </div>
         </div>
 
+        {/* Flags */}
         <div className="grid md:grid-cols-3 gap-4">
           <label className="flex items-center gap-2">
             <input
@@ -398,19 +396,8 @@ export default function ProductsManager() {
             <span className="text-ink/90">Featured</span>
           </label>
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={!!form.isNew}
-              onChange={(e) => setForm({ ...form, isNew: e.target.checked })}
-            />
-            <span className="text-ink/90">New</span>
-          </label>
-
           <div>
-            <label className="block text-sm text-ink/80 mb-1">
-              Discount (%)
-            </label>
+            <FieldLabel>Discount (%)</FieldLabel>
             <input
               type="number"
               step="1"
@@ -422,13 +409,9 @@ export default function ProductsManager() {
               }}
             />
           </div>
-        </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-ink/80 mb-1">
-              Discount ends (optional)
-            </label>
+            <FieldLabel>Discount ends (optional)</FieldLabel>
             <input
               type="datetime-local"
               className={inputCls}
@@ -442,7 +425,7 @@ export default function ProductsManager() {
 
         <div className="flex gap-2">
           <button
-            className="btn bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
             disabled={busy}
             type="submit"
           >
@@ -463,8 +446,8 @@ export default function ProductsManager() {
         </div>
       </form>
 
-      {/* List (section color A again) */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      {/* List */}
+      <div>
         <div className="text-sm text-muted mb-2">
           {filtered.length} product(s)
         </div>
@@ -472,29 +455,10 @@ export default function ProductsManager() {
           {filtered.map((p) => (
             <div
               key={p.id}
-              className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
+              className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm"
             >
-              <div className="mb-2 flex items-center gap-2 text-xs">
-                {p.featured && (
-                  <span className="rounded-full bg-brand/10 px-2 py-0.5 text-brand ring-1 ring-brand/20">
-                    Featured
-                  </span>
-                )}
-                {p.isNew && (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 ring-1 ring-emerald-200">
-                    New
-                  </span>
-                )}
-                {typeof p.discount === "number" && p.discount > 0 && (
-                  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-rose-700 ring-1 ring-rose-200">
-                    -{p.discount}%
-                  </span>
-                )}
-              </div>
-
               <ProductCard product={p} />
-
-              <div className="mt-3 flex gap-2">
+              <div className="flex gap-2 mt-2">
                 <button
                   className="btn-outline"
                   onClick={() => {

@@ -114,6 +114,8 @@ const en = {
   about_ready_sub: "Explore the catalog or message us — we’re here to help.",
 
   // Eye tests (home & about)
+  more_info: "More information",
+  book_whatsapp: "Book via WhatsApp",
   eye_eyebrow: "Eye Exams",
   eye_title: "Professional eye tests",
   eye_subtitle:

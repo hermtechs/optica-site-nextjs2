@@ -18,28 +18,40 @@ export default function ContentManager() {
     promo_text_es: "",
     promo_text_en: "",
 
-    // About page (you already had)
+    // Global WhatsApp CTA (e.g., product cards / generic CTA)
+    whatsapp_cta_text_es: "Más información y pedidos por WhatsApp",
+    whatsapp_cta_text_en: "More information and orders on WhatsApp",
+
+    // Home > Eye test WhatsApp button
+    eye_whatsapp_text_es: "Más información y agendar por WhatsApp",
+    eye_whatsapp_text_en: "More info and booking on WhatsApp",
+
+    // Eye Tests page WhatsApp button
+    eye_page_whatsapp_text_es: "Agendar examen por WhatsApp",
+    eye_page_whatsapp_text_en: "Book eye exam on WhatsApp",
+
+    // About page
     about_title_es: "",
     about_title_en: "",
     about_body_es: "",
     about_body_en: "",
     about_image: "/images/about.jpg",
 
-    // Home > About block (you already had)
+    // Home > About block
     home_about_title_es: "",
     home_about_title_en: "",
     home_about_body_es: "",
     home_about_body_en: "",
     home_about_image: "/images/home-about.jpg",
 
-    // Home > Eye test block (you already had)
+    // Home > Eye test block
     eye_title_es: "",
     eye_title_en: "",
     eye_body_es: "",
     eye_body_en: "",
     eye_image: "/images/eye-exam.jpg",
 
-    // Contact / Footer (you already had)
+    // Contact / Footer
     contact_phone: "",
     contact_email: "",
     contact_address_es: "",
@@ -49,7 +61,7 @@ export default function ContentManager() {
     footer_tagline_es: "",
     footer_tagline_en: "",
 
-    // NEW: Our Story page
+    // Our Story page
     story_title_es: "",
     story_title_en: "",
     story_body_es: "",
@@ -57,7 +69,7 @@ export default function ContentManager() {
     story_image: "/images/story-hero.jpg",
     story_gallery: [], // array of URLs
 
-    // NEW: Eye Tests FULL page
+    // Eye Tests FULL page
     eye_page_title_es: "",
     eye_page_title_en: "",
     eye_page_body_es: "",
@@ -149,6 +161,55 @@ export default function ContentManager() {
           className={inputCls}
           value={content[L("promo_text")] ?? ""}
           onChange={(e) => setL("promo_text", e.target.value)}
+        />
+      </section>
+
+      {/* Global Buttons / WhatsApp CTA */}
+      <section className="rounded-2xl border border-amber-200 bg-[#FFFAF2] p-4 shadow-sm grid gap-3">
+        <h4 className="text-base font-semibold text-ink">
+          Global buttons & WhatsApp text
+        </h4>
+
+        <label className="text-sm text-ink/80">
+          Global WhatsApp CTA (e.g. product cards)
+        </label>
+        <input
+          className={inputCls}
+          value={content[L("whatsapp_cta_text")] ?? ""}
+          onChange={(e) => setL("whatsapp_cta_text", e.target.value)}
+          placeholder={
+            lang === "es"
+              ? "Más información y pedidos por WhatsApp"
+              : "More information and orders on WhatsApp"
+          }
+        />
+
+        <label className="text-sm text-ink/80">
+          Home — Eye test WhatsApp button text
+        </label>
+        <input
+          className={inputCls}
+          value={content[L("eye_whatsapp_text")] ?? ""}
+          onChange={(e) => setL("eye_whatsapp_text", e.target.value)}
+          placeholder={
+            lang === "es"
+              ? "Más información y agendar por WhatsApp"
+              : "More info and booking on WhatsApp"
+          }
+        />
+
+        <label className="text-sm text-ink/80">
+          Eye Tests page WhatsApp button text
+        </label>
+        <input
+          className={inputCls}
+          value={content[L("eye_page_whatsapp_text")] ?? ""}
+          onChange={(e) => setL("eye_page_whatsapp_text", e.target.value)}
+          placeholder={
+            lang === "es"
+              ? "Agendar examen por WhatsApp"
+              : "Book eye exam on WhatsApp"
+          }
         />
       </section>
 
@@ -255,14 +316,30 @@ export default function ContentManager() {
           onChange={(e) => setL("eye_body", e.target.value)}
         />
         <label className="text-sm text-ink/80">Image</label>
-        <input
-          className={inputCls}
-          value={content.eye_image || ""}
-          onChange={(e) =>
-            setContent((c) => ({ ...c, eye_image: e.target.value }))
-          }
-          placeholder="/images/eye-exam.jpg or https://…"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            className={`${inputCls} flex-1`}
+            value={content.eye_image || ""}
+            onChange={(e) =>
+              setContent((c) => ({ ...c, eye_image: e.target.value }))
+            }
+            placeholder="/images/eye-exam.jpg or https://…"
+          />
+          <label className="btn-outline cursor-pointer">
+            Upload
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const url = await upload(f, "site");
+                setContent((c) => ({ ...c, eye_image: url }));
+              }}
+            />
+          </label>
+        </div>
       </section>
 
       {/* Contact & Footer */}
@@ -311,7 +388,7 @@ export default function ContentManager() {
         />
       </section>
 
-      {/* NEW — Our Story page (soft rose) */}
+      {/* Our Story page */}
       <section className="rounded-2xl border border-rose-200 bg-[#FFF7F8] p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Our Story page</h4>
 
@@ -399,7 +476,7 @@ export default function ContentManager() {
         </label>
       </section>
 
-      {/* NEW — Eye Tests FULL page (soft indigo) */}
+      {/* Eye Tests FULL page */}
       <section className="rounded-2xl border border-indigo-200 bg-[#F6F7FF] p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Eye Tests page</h4>
 
@@ -420,14 +497,30 @@ export default function ContentManager() {
         />
 
         <label className="text-sm text-ink/80">Hero image</label>
-        <input
-          className={inputCls}
-          value={content.eye_page_image || ""}
-          onChange={(e) =>
-            setContent((c) => ({ ...c, eye_page_image: e.target.value }))
-          }
-          placeholder="/images/eye-tests-hero.jpg or https://…"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            className={`${inputCls} flex-1`}
+            value={content.eye_page_image || ""}
+            onChange={(e) =>
+              setContent((c) => ({ ...c, eye_page_image: e.target.value }))
+            }
+            placeholder="/images/eye-tests-hero.jpg or https://…"
+          />
+          <label className="btn-outline cursor-pointer">
+            Upload
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                const url = await upload(f, "site");
+                setContent((c) => ({ ...c, eye_page_image: url }));
+              }}
+            />
+          </label>
+        </div>
 
         <label className="text-sm text-ink/80">
           Services (one per line) — shown as bullet list

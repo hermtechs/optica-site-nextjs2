@@ -128,6 +128,8 @@ const es = {
 
   // Eye tests (home & about)
   eye_eyebrow: "Exámenes Visuales",
+  book_whatsapp: "Reservar por WhatsApp",
+  more_info: "Más información",
   eye_title: "Exámenes de la vista profesionales",
   eye_subtitle:
     "Realizamos evaluaciones completas para graduaciones precisas y cuidado preventivo de tu salud visual.",

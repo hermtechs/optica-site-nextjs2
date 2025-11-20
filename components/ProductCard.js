@@ -4,7 +4,8 @@
 import Link from "next/link";
 import { FaWhatsapp } from "react-icons/fa";
 import { useMemo } from "react";
-import useSiteContent from "@/lib/useSiteContent"; // pulls phone for WA link
+import useSiteContent from "@/lib/useSiteContent";
+import { useLocale } from "@/components/i18n/LocaleProvider";
 
 function formatCOP(n) {
   if (typeof n !== "number") return n;
@@ -19,7 +20,7 @@ function formatCOP(n) {
   }
 }
 
-// Build a stable deep link to this product using id (preferred) or slug
+// Prefer ID route; fallback to slug route; absolute URL for WA message
 function getProductUrl(product) {
   const origin =
     typeof window !== "undefined" && window.location
@@ -34,19 +35,29 @@ function getProductUrl(product) {
   return origin || "#";
 }
 
-function waLink(product, phone) {
+function waLink(product, phone, isEN) {
   const digits = (phone || "").replace(/\D+/g, "");
-  const text = encodeURIComponent(
-    `Hola, quiero pedir este producto:\n• ${
-      product?.name_es || product?.name_en || product?.name || ""
-    }\n• ${formatCOP(product?.price)}\n${getProductUrl(product)}`
-  );
-  // allow link even if phone not set (still opens WA with the text)
+  const displayName =
+    (isEN ? product?.name_en : product?.name_es) ||
+    product?.name ||
+    (isEN ? "Unnamed product" : "Producto sin nombre");
+
+  const baseText = isEN
+    ? `Hello, I’d like to order this product:\n• ${displayName}\n• ${formatCOP(
+        product?.price
+      )}`
+    : `Hola, quiero pedir este producto:\n• ${displayName}\n• ${formatCOP(
+        product?.price
+      )}`;
+
+  const text = encodeURIComponent(`${baseText}\n${getProductUrl(product)}`);
   return `https://wa.me/${digits}?text=${text}`;
 }
 
 export default function ProductCard({ product }) {
   const { content } = useSiteContent();
+  const { locale, t } = useLocale();
+  const isEN = locale === "en";
 
   const hasDiscount =
     typeof product?.discount === "number" && product.discount > 0;
@@ -62,13 +73,16 @@ export default function ProductCard({ product }) {
     return { finalPrice: discounted };
   }, [product, hasDiscount]);
 
+  // 🔵 Localized name & category (switch by current locale)
   const name =
-    product?.name_es ||
-    product?.name_en ||
+    (isEN ? product?.name_en : product?.name_es) ||
     product?.name ||
-    "Producto sin nombre";
+    (isEN ? "Unnamed product" : "Producto sin nombre");
+
   const category =
-    product?.category_es || product?.category_en || product?.category || "";
+    (isEN ? product?.category_en : product?.category_es) ||
+    product?.category ||
+    "";
 
   // Prefer routing by id; fall back to slug
   const pid =
@@ -80,8 +94,16 @@ export default function ProductCard({ product }) {
     ? `/product/${encodeURIComponent(slug)}`
     : "#";
 
-  const cardDisabled = !pid && !slug; // avoid navigations that 404
-  const wa = waLink(product, content?.contact_phone);
+  const cardDisabled = !pid && !slug;
+  const wa = waLink(product, content?.contact_phone, isEN);
+
+  // UI labels
+  const orderLabel =
+    t("order_whatsapp") ||
+    (isEN ? "Order on WhatsApp" : "Ordenar por WhatsApp");
+  const detailsLabel = isEN ? "View details" : "Ver detalles";
+  const featuredLabel = isEN ? "Featured" : "Destacado";
+  const newLabel = isEN ? "New" : "Nuevo";
 
   return (
     <div
@@ -99,12 +121,12 @@ export default function ProductCard({ product }) {
               <div className="absolute left-3 top-3 z-10 flex gap-2">
                 {isFeatured && (
                   <span className="rounded-full bg-brand px-2 py-1 text-xs font-semibold text-white shadow">
-                    Destacado
+                    {featuredLabel}
                   </span>
                 )}
                 {isNew && (
                   <span className="rounded-full bg-emerald-500 px-2 py-1 text-xs font-semibold text-white shadow">
-                    Nuevo
+                    {newLabel}
                   </span>
                 )}
                 {hasDiscount && (
@@ -129,12 +151,12 @@ export default function ProductCard({ product }) {
               <div className="absolute left-3 top-3 z-10 flex gap-2">
                 {isFeatured && (
                   <span className="rounded-full bg-brand px-2 py-1 text-xs font-semibold text-white shadow">
-                    Destacado
+                    {featuredLabel}
                   </span>
                 )}
                 {isNew && (
                   <span className="rounded-full bg-emerald-500 px-2 py-1 text-xs font-semibold text-white shadow">
-                    Nuevo
+                    {newLabel}
                   </span>
                 )}
                 {hasDiscount && (
@@ -188,7 +210,7 @@ export default function ProductCard({ product }) {
             "
           >
             <FaWhatsapp size={16} />
-            <span>Order on WhatsApp</span>
+            <span>{orderLabel}</span>
           </a>
 
           {!cardDisabled && (
@@ -196,7 +218,7 @@ export default function ProductCard({ product }) {
               href={detailsHref}
               className="ml-auto text-sm font-medium text-brand hover:underline"
             >
-              Ver detalles
+              {detailsLabel}
             </Link>
           )}
         </div>

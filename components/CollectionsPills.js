@@ -9,7 +9,10 @@ import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ArrowRight } from "lucide-react";
 
 export default function CollectionsPills() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const isEN = locale === "en";
+  const isES = locale === "es";
+
   const [items, setItems] = useState([]);
 
   // Live products (to build categories dynamically)
@@ -24,8 +27,14 @@ export default function CollectionsPills() {
   // Build categories map: { name, count, cover }
   const categories = useMemo(() => {
     const map = new Map();
+
     for (const p of items) {
-      const name = p.category_es || p.category_en || p.category || "General";
+      // LOCALIZED CATEGORY NAME
+      const name =
+        (isEN ? p.category_en : p.category_es) ||
+        p.category ||
+        (isEN ? "General" : "General");
+
       if (!map.has(name)) {
         map.set(name, {
           name,
@@ -33,9 +42,10 @@ export default function CollectionsPills() {
           cover: p.image || (Array.isArray(p.gallery) ? p.gallery[0] : ""),
         });
       }
+
       const entry = map.get(name);
       entry.count += 1;
-      // prefer first available image as cover
+
       if (
         !entry.cover &&
         (p.image || (Array.isArray(p.gallery) && p.gallery[0]))
@@ -43,19 +53,32 @@ export default function CollectionsPills() {
         entry.cover = p.image || p.gallery[0];
       }
     }
-    // Sort by popularity; keep all for pills, but cap grid to 12
+
     const arr = Array.from(map.values()).sort((a, b) => b.count - a.count);
     return {
       pills: arr,
       grid: arr.slice(0, 12),
     };
-  }, [items]);
+  }, [items, locale]); // react to locale toggle
 
   const pillBase =
     "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors";
   const pillIdle =
     "bg-white text-ink ring-1 ring-brand/20 hover:ring-brand/40 shadow";
-  const sectionTitle = t("shop_by_category") || "Comprar por categoría";
+
+  const sectionTitle =
+    t("shop_by_category") ||
+    (isEN ? "Shop by category" : "Comprar por categoría");
+
+  const subtitle =
+    t("feature_subtitle") ||
+    (isEN
+      ? "Curated selection: clean lines and everyday comfort."
+      : "Selección curada: líneas limpias y comodidad diaria.");
+
+  const shopAllLabel = t("shop_all") || (isEN ? "View All" : "Ver Todo");
+  const itemsLabel = (count) =>
+    isEN ? `${count} items` : `${count} artículos`;
 
   return (
     <section className="relative py-10">
@@ -67,28 +90,25 @@ export default function CollectionsPills() {
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold text-ink">{sectionTitle}</h2>
-            <p className="text-muted">
-              {t("feature_subtitle") ||
-                "Selección curada: líneas limpias y comodidad diaria."}
-            </p>
+            <p className="text-muted">{subtitle}</p>
           </div>
           <Link
             href="/categories"
             className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-brand/20 bg-white px-3 py-2 text-sm text-ink hover:border-brand/40 hover:bg-mist"
           >
-            {t("shop_all") || "Ver Todo"}
+            {shopAllLabel}
             <ArrowRight size={16} />
           </Link>
         </div>
 
-        {/* Pills row (always visible, scrollable on mobile) */}
+        {/* Pills row */}
         <div className="-mx-4 mb-6 overflow-x-auto px-4 pb-1">
           <div className="flex w-max gap-2">
             <Link
               href="/products"
               className={`${pillBase} bg-brand text-white shadow`}
             >
-              {t("shop_all") || "Ver Todo"}
+              {shopAllLabel}
             </Link>
             {categories.pills.map((c) => (
               <Link
@@ -106,7 +126,7 @@ export default function CollectionsPills() {
           </div>
         </div>
 
-        {/* Grid cards (md+ only) */}
+        {/* Grid cards */}
         <div className="hidden md:grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {categories.grid.map((c) => (
             <Link
@@ -114,8 +134,7 @@ export default function CollectionsPills() {
               href={`/categories?cat=${encodeURIComponent(c.name)}`}
               className="group relative overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-brand/10 transition hover:shadow-md hover:ring-brand/20"
             >
-              {/* gentle corner waves */}
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand/5 blur-0 transition group-hover:bg-brand/10" />
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand/5 transition group-hover:bg-brand/10" />
               <div className="pointer-events-none absolute -left-8 -bottom-12 h-28 w-28 rounded-full bg-brand/5 transition group-hover:bg-brand/10" />
 
               <div className="flex items-center gap-3">
@@ -132,12 +151,16 @@ export default function CollectionsPills() {
                     </div>
                   )}
                 </div>
+
                 <div className="min-w-0">
                   <div className="truncate text-base font-semibold text-ink">
                     {c.name}
                   </div>
-                  <div className="text-sm text-muted">{c.count} items</div>
+                  <div className="text-sm text-muted">
+                    {itemsLabel(c.count)}
+                  </div>
                 </div>
+
                 <ArrowRight
                   size={18}
                   className="ml-auto text-muted transition group-hover:translate-x-0.5 group-hover:text-ink"
@@ -153,7 +176,7 @@ export default function CollectionsPills() {
             href="/categories"
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand/20 bg-white px-4 py-2.5 text-sm text-ink hover:border-brand/40 hover:bg-mist"
           >
-            {t("shop_all") || "Ver Todo"}
+            {shopAllLabel}
             <ArrowRight size={16} />
           </Link>
         </div>

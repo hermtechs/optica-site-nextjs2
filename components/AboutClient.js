@@ -13,46 +13,54 @@ import {
 } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import products from "@/data/products";
+import { useSiteContent } from "@/context/SiteContentContext";
 
 export default function AboutClient() {
-  const { t, locale } = useLocale();
+  // Old i18n (JSON) – fallback
+  const { t: tJSON, locale } = useLocale();
   const isEN = locale === "en";
+
+  // New Firestore-based content
+  const { t: tFS, content } = useSiteContent();
+
+  // Firestore-first, then JSON translations
+  const T = (key) => tFS(key) || tJSON(key);
 
   const values = [
     {
       icon: <Heart className="w-5 h-5" />,
-      title: t("about_value_care"),
-      desc: t("about_value_care_desc"),
+      title: T("about_value_care"),
+      desc: T("about_value_care_desc"),
     },
     {
       icon: <Eye className="w-5 h-5" />,
-      title: t("about_value_vision"),
-      desc: t("about_value_vision_desc"),
+      title: T("about_value_vision"),
+      desc: T("about_value_vision_desc"),
     },
     {
       icon: <Shield className="w-5 h-5" />,
-      title: t("about_value_quality"),
-      desc: t("about_value_quality_desc"),
+      title: T("about_value_quality"),
+      desc: T("about_value_quality_desc"),
     },
     {
       icon: <Award className="w-5 h-5" />,
-      title: t("about_value_experts"),
-      desc: t("about_value_experts_desc"),
+      title: T("about_value_experts"),
+      desc: T("about_value_experts_desc"),
     },
   ];
 
   const stats = [
-    { label: t("about_stat_years"), value: "10+" },
-    { label: t("about_stat_clients"), value: "25k+" },
-    { label: t("about_stat_brands"), value: "60+" },
-    { label: t("about_stat_rating"), value: "4.9★" },
+    { label: T("about_stat_years"), value: "10+" },
+    { label: T("about_stat_clients"), value: "25k+" },
+    { label: T("about_stat_brands"), value: "60+" },
+    { label: T("about_stat_rating"), value: "4.9★" },
   ];
 
   const featuredList = (products?.filter((p) => p?.featured) ?? []).slice(0, 4);
   const fallbackList =
     featuredList.length > 0 ? featuredList : (products ?? []).slice(0, 4);
 
-  // Static WA link (no SSR mismatch)
+  // Static WA link (no SSR mismatch), message localized by locale
   const waHref =
     "https://wa.me/?text=" +
     encodeURIComponent(
@@ -61,6 +69,16 @@ export default function AboutClient() {
         : "¡Hola! Me gustaría agendar un examen visual en DamiOptica."
     );
 
+  // Firestore-driven eye exam image for this page (fallback to static)
+  const eyeImage = content?.eye_image || "/images/eye-exam.jpg";
+
+  // Firestore-driven WhatsApp button label for eye tests,
+  // falling back to your old translation key
+  const eyeCtaLabel =
+    tFS("eye_whatsapp_text") ||
+    tFS("whatsapp_cta_text") ||
+    tJSON("eye_cta_book");
+
   return (
     <main className="bg-white">
       {/* Hero */}
@@ -68,19 +86,19 @@ export default function AboutClient() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent" />
         <div className="container-tight py-16 md:py-24">
           <p className="text-xs font-semibold tracking-wider text-brand uppercase">
-            {t("about_eyebrow")}
+            {T("about_eyebrow")}
           </p>
           <h1 className="mt-3 text-3xl md:text-5xl font-semibold tracking-tight text-ink">
-            {t("about_title")}
+            {T("about_title")}
           </h1>
-          <p className="mt-4 max-w-2xl text-muted">{t("about_subtitle")}</p>
+          <p className="mt-4 max-w-2xl text-muted">{T("about_subtitle")}</p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/products" className="btn">
-              {t("about_cta_shop")}
+              {T("about_cta_shop")}
             </Link>
             <Link href="/search?autofocus=1" className="btn-outline">
-              {t("about_cta_browse")}
+              {T("about_cta_browse")}
             </Link>
           </div>
         </div>
@@ -91,29 +109,29 @@ export default function AboutClient() {
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="rounded-2xl bg-mist/60 p-6 md:p-8">
             <h2 className="text-xl md:text-2xl font-semibold text-ink">
-              {t("about_our_story")}
+              {T("about_our_story")}
             </h2>
-            <p className="mt-3 text-ink/80">{t("about_story_p1")}</p>
-            <p className="mt-3 text-ink/80">{t("about_story_p2")}</p>
+            <p className="mt-3 text-ink/80">{T("about_story_p1")}</p>
+            <p className="mt-3 text-ink/80">{T("about_story_p2")}</p>
             <ul className="mt-4 space-y-2 text-ink/90">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 text-brand" />
-                <span>{t("about_point_1")}</span>
+                <span>{T("about_point_1")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 text-brand" />
-                <span>{t("about_point_2")}</span>
+                <span>{T("about_point_2")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 text-brand" />
-                <span>{t("about_point_3")}</span>
+                <span>{T("about_point_3")}</span>
               </li>
             </ul>
           </div>
 
           <div className="rounded-2xl border border-white/60 p-6 md:p-8">
             <h3 className="text-lg md:text-xl font-semibold text-ink">
-              {t("about_in_numbers")}
+              {T("about_in_numbers")}
             </h3>
             <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4">
               {stats.map((s) => (
@@ -126,7 +144,7 @@ export default function AboutClient() {
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-sm text-muted">{t("about_stats_note")}</p>
+            <p className="mt-6 text-sm text-muted">{T("about_stats_note")}</p>
           </div>
         </div>
       </section>
@@ -134,9 +152,9 @@ export default function AboutClient() {
       {/* Values */}
       <section className="container-tight py-10 md:py-14">
         <h2 className="text-xl md:text-2xl font-semibold text-ink">
-          {t("about_values_title")}
+          {T("about_values_title")}
         </h2>
-        <p className="mt-2 max-w-2xl text-muted">{t("about_values_sub")}</p>
+        <p className="mt-2 max-w-2xl text-muted">{T("about_values_sub")}</p>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {values.map((v) => (
@@ -159,8 +177,8 @@ export default function AboutClient() {
         <div className="grid gap-8 md:grid-cols-2">
           <div className="relative rounded-3xl overflow-hidden bg-mist/60 min-h-[260px]">
             <img
-              src="/images/eye-exam.jpg"
-              alt={t("eye_img_alt")}
+              src={eyeImage}
+              alt={T("eye_img_alt")}
               className="h-full w-full object-cover"
               onError={(e) => (e.currentTarget.style.display = "none")}
               loading="lazy"
@@ -173,30 +191,30 @@ export default function AboutClient() {
 
           <div>
             <p className="text-xs font-semibold tracking-wider text-brand uppercase">
-              {t("eye_eyebrow")}
+              {T("eye_eyebrow")}
             </p>
             <h2 className="mt-2 text-2xl md:text-3xl font-semibold tracking-tight text-ink">
-              {t("eye_title")}
+              {T("eye_title")}
             </h2>
-            <p className="mt-3 text-ink/80">{t("eye_subtitle")}</p>
+            <p className="mt-3 text-ink/80">{T("eye_subtitle")}</p>
 
             <ul className="mt-4 space-y-2">
               <li className="flex items-start gap-2">
                 <Stethoscope className="mt-0.5 w-5 h-5 text-brand" />
                 <span className="text-ink/90">
-                  {t("eye_point_optometrists_desc")}
+                  {T("eye_point_optometrists_desc")}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="mt-0.5 w-5 h-5 text-brand" />
                 <span className="text-ink/90">
-                  {t("eye_point_equipment_desc")}
+                  {T("eye_point_equipment_desc")}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <Eye className="mt-0.5 w-5 h-5 text-brand" />
                 <span className="text-ink/90">
-                  {t("eye_point_results_desc")}
+                  {T("eye_point_results_desc")}
                 </span>
               </li>
             </ul>
@@ -208,10 +226,10 @@ export default function AboutClient() {
                 rel="noopener noreferrer"
                 className="btn bg-[var(--color-wa,#25D366)] hover:opacity-90"
               >
-                {t("eye_cta_book")}
+                {eyeCtaLabel}
               </a>
               <Link href="/contact" className="btn-outline">
-                {t("eye_cta_contact")}
+                {T("eye_cta_contact")}
               </Link>
             </div>
           </div>
@@ -223,9 +241,9 @@ export default function AboutClient() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
             <h2 className="text-xl md:text-2xl font-semibold text-ink">
-              {t("featured")}
+              {T("featured")}
             </h2>
-            <p className="text-sm text-muted">{t("feature_subtitle")}</p>
+            <p className="text-sm text-muted">{T("feature_subtitle")}</p>
           </div>
           <Link
             href="/products"
@@ -248,16 +266,16 @@ export default function AboutClient() {
           <div className="rounded-2xl bg-white border border-white/60 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="text-lg md:text-xl font-semibold text-ink">
-                {t("about_ready_title")}
+                {T("about_ready_title")}
               </h3>
-              <p className="text-sm text-muted">{t("about_ready_sub")}</p>
+              <p className="text-sm text-muted">{T("about_ready_sub")}</p>
             </div>
             <div className="flex gap-3">
               <Link href="/products" className="btn">
-                {t("about_cta_shop")}
+                {T("about_cta_shop")}
               </Link>
               <Link href="/contact" className="btn-outline">
-                {t("about_cta_contact")}
+                {T("about_cta_contact")}
               </Link>
             </div>
           </div>

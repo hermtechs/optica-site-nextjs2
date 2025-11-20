@@ -3,26 +3,41 @@
 
 import Link from "next/link";
 import { FaWhatsapp } from "react-icons/fa";
-import useSiteContent from "@/lib/useSiteContent";
 import { useMemo } from "react";
+import useSiteContent from "@/lib/useSiteContent";
+import { useLocale } from "@/components/i18n/LocaleProvider";
 
-function waLink(content) {
+function waLink(content, isEN) {
   const base = "https://wa.me/";
-  const digits = (content.contact_phone || "").replace(/\D+/g, "");
+  const digits = (content?.contact_phone || "").replace(/\D+/g, "");
   const text = encodeURIComponent(
-    `Hola, quiero reservar un examen de la vista en DamiOptica. ¿Tienen disponibilidad?`
+    isEN
+      ? "Hello, I’d like to book an eye exam at DamiOptica. Do you have availability?"
+      : "Hola, quiero reservar un examen de la vista en DamiOptica. ¿Tienen disponibilidad?"
   );
   return `${base}${digits ? digits : ""}?text=${text}`;
 }
 
 export default function EyeTestSection() {
   const { getStrict, content } = useSiteContent();
+  const { locale, t } = useLocale();
+  const isEN = locale === "en";
 
-  const title = getStrict("eye_title");
-  const body = getStrict("eye_body");
-  const img = content.eye_image || "/images/eye-exam.jpg";
+  const title = getStrict("eye_title"); // localized via admin content
+  const body = getStrict("eye_body"); // localized via admin content
+  const img = content?.eye_image || "/images/eye-exam.jpg";
 
-  const wurl = useMemo(() => waLink(content), [content]);
+  // Labels (use locales if present, otherwise sensible fallbacks)
+  const moreLabel =
+    t("more_info") ||
+    t("hero_cta") ||
+    (isEN ? "More information" : "Más información");
+  const waLabel =
+    t("book_whatsapp") ||
+    t("order_whatsapp") ||
+    (isEN ? "Book via WhatsApp" : "Reservar por WhatsApp");
+
+  const wurl = useMemo(() => waLink(content, isEN), [content, isEN]);
 
   return (
     <section className="container-tight py-10">
@@ -42,7 +57,7 @@ export default function EyeTestSection() {
               href="/eye-tests"
               className="inline-flex items-center justify-center rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow hover:brightness-95 focus-visible:ring-2 focus-visible:ring-brand/40"
             >
-              Más información
+              {moreLabel}
             </Link>
             <a
               href={wurl}
@@ -51,7 +66,7 @@ export default function EyeTestSection() {
               className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white shadow hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#25D366]/50"
             >
               <FaWhatsapp size={18} />
-              Reservar por WhatsApp
+              {waLabel}
             </a>
           </div>
         </div>
@@ -59,7 +74,7 @@ export default function EyeTestSection() {
         <div className="relative">
           <img
             src={img}
-            alt=""
+            alt={isEN ? "Eye exam" : "Examen de la vista"}
             className="h-full w-full rounded-xl object-cover"
           />
           <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-black/10" />
