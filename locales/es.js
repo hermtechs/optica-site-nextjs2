@@ -145,10 +145,13 @@ const es = {
   eye_cta_more: "Saber más",
   eye_cta_contact: "Escríbenos",
   eye_img_alt: "Examen visual en DamiOptica",
+  about_cta: "Sobre nosotros",
+  about_section_title: "Sobre nosotros",
 
   // Contact
   contact_eyebrow: "Contacto",
   contact_title: "Ponte en contacto",
+  contact_whatsapp_cta: "Contáctanos por WhatsApp",
   contact_subtitle: "Agendamientos, consultas y soporte. Responderemos pronto.",
   contact_reach_us: "Nuestros datos",
   contact_phone: "Llámanos",

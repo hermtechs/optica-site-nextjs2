@@ -15,7 +15,7 @@ import LanguageToggle from "@/components/LanguageToggle";
  */
 export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false); // avoid SSR/CSR aria-label mismatch
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { t } = useLocale();
 
@@ -63,10 +63,14 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
       ? "hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 text-white"
       : "hover:bg-surf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 text-ink");
 
-  // Localized aria labels only after mount to prevent hydration mismatch
+  // Localized labels after mount to avoid hydration mismatch
   const ariaSearch = mounted ? t("search_aria") : undefined;
   const ariaMenu = mounted ? t("menu") : undefined;
   const ariaClose = mounted ? t("close_menu") : undefined;
+
+  // Some bundles use "categories_label"; fall back to "categories" if present
+  const categoriesLabel =
+    t("categories_label") || t("categories") || "Categories";
 
   return (
     <header className={wrap} role="navigation" aria-label="Main">
@@ -96,8 +100,12 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
             <Link href="/products" className={link}>
               {t("products")}
             </Link>
+            <Link href="/categories" className={link}>
+              {categoriesLabel}
+            </Link>
           </nav>
 
+          {/* Brand */}
           <Link
             href="/"
             className={
@@ -112,14 +120,8 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
             <Link href="/about" className={link}>
               {t("about_link")}
             </Link>
-            <Link href="/search?q=blog" className={link}>
-              {t("blog")}
-            </Link>
-            <Link href="/search" className={link}>
-              {t("pages")}
-            </Link>
-            <Link href="/search?q=faq" className={link}>
-              {t("faqs")}
+            <Link href="/contact" className={link}>
+              {t("care_contact")}
             </Link>
           </nav>
         </div>
@@ -137,14 +139,12 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
 
         {/* RIGHT: Desktop language toggle + Mobile hamburger */}
         <div className="flex items-center gap-2">
-          {/* Desktop language toggle (wrapped in Suspense) */}
           <div className="hidden md:block">
             <Suspense fallback={null}>
               <LanguageToggle size="sm" />
             </Suspense>
           </div>
 
-          {/* Mobile hamburger */}
           <div className="md:hidden">
             <button
               suppressHydrationWarning
@@ -166,7 +166,6 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
       {/* Mobile: backdrop + panel */}
       {open && (
         <>
-          {/* Backdrop (tap to close) */}
           <button
             suppressHydrationWarning
             aria-label={ariaClose}
@@ -174,21 +173,20 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
             className="fixed inset-0 z-40 bg-black/30 md:hidden"
           />
 
-          {/* Drawer panel */}
           <div
             className="
               fixed inset-x-0 top-0 bottom-0 z-50 md:hidden
               bg-white text-ink
-              overflow-y-auto overflow-x-hidden     /* prevent side scroll */
-              overscroll-contain touch-pan-y         /* better mobile scroll */
-              w-screen                               /* lock width to viewport */
+              overflow-y-auto overflow-x-hidden
+              overscroll-contain touch-pan-y
+              w-screen
             "
             onClick={(e) => e.stopPropagation()}
           >
             {/* Spacer for navbar/promo */}
             <div className={offsetByPromo ? "h-[5rem]" : "h-20"} />
 
-            {/* Sticky header with single close button */}
+            {/* Sticky header */}
             <div className="sticky top-0 z-50 bg-white/95 supports-[backdrop-filter]:bg-white/80 backdrop-blur border-b">
               <div className="container-tight flex items-center justify-between py-2">
                 <span className="text-lg font-semibold text-ink">
@@ -237,6 +235,15 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                 </li>
                 <li>
                   <Link
+                    href="/categories"
+                    className="block px-1 py-2 rounded hover:bg-mist"
+                    onClick={() => setOpen(false)}
+                  >
+                    {categoriesLabel}
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     href="/about"
                     className="block px-1 py-2 rounded hover:bg-mist"
                     onClick={() => setOpen(false)}
@@ -246,29 +253,11 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                 </li>
                 <li>
                   <Link
-                    href="/search?q=blog"
+                    href="/contact"
                     className="block px-1 py-2 rounded hover:bg-mist"
                     onClick={() => setOpen(false)}
                   >
-                    {t("blog")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/search"
-                    className="block px-1 py-2 rounded hover:bg-mist"
-                    onClick={() => setOpen(false)}
-                  >
-                    {t("pages")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/search?q=faq"
-                    className="block px-1 py-2 rounded hover:bg-mist"
-                    onClick={() => setOpen(false)}
-                  >
-                    {t("faqs")}
+                    {t("care_contact")}
                   </Link>
                 </li>
               </ul>

@@ -59,7 +59,7 @@ const en = {
   care_warranty: "Warranty",
   care_faq: "FAQs",
   care_exam: "Book Eye Exam",
-  care_contact: "Contact Us",
+  care_contact: "Contact",
 
   stay_in_loop: "Stay in the loop",
   subscribe: "Subscribe",
@@ -132,10 +132,12 @@ const en = {
   eye_cta_more: "Learn more",
   eye_cta_contact: "Message us",
   eye_img_alt: "Eye exam at DamiOptica",
-
+  about_cta: "More about us",
+  about_section_title: "About us",
   // Contact
   contact_eyebrow: "Contact",
   contact_title: "Get in touch",
+  contact_whatsapp_cta: "Contact us via WhatsApp",
   contact_subtitle:
     "Appointments, questions and support. We’ll get back to you soon.",
   contact_reach_us: "Our details",

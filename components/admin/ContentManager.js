@@ -389,7 +389,7 @@ export default function ContentManager() {
       </section>
 
       {/* Our Story page */}
-      <section className="rounded-2xl border border-rose-200 bg-[#FFF7F8] p-4 shadow-sm grid gap-3">
+      {/* <section className="rounded-2xl border border-rose-200 bg-[#FFF7F8] p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Our Story page</h4>
 
         <label className="text-sm text-ink/80">Title</label>
@@ -474,7 +474,7 @@ export default function ContentManager() {
             }}
           />
         </label>
-      </section>
+      </section> */}
 
       {/* Eye Tests FULL page */}
       <section className="rounded-2xl border border-indigo-200 bg-[#F6F7FF] p-4 shadow-sm grid gap-3">

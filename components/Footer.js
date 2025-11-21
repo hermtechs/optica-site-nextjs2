@@ -1,5 +1,8 @@
 // components/Footer.js
 "use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Mail,
   MapPin,
@@ -12,18 +15,85 @@ import {
 } from "lucide-react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 
+// Firestore (guarded, one-time fetch for categories)
+import { db } from "@/lib/firebaseClient";
+import { collection, getDocs, query, limit } from "firebase/firestore";
+
+// Re-use the site content hook you already have elsewhere
+import useSiteContent from "@/lib/useSiteContent";
+
+function slugify(s = "") {
+  return s
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
+
 export default function Footer() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const isEN = locale === "en";
   const year = new Date().getFullYear();
 
-  const onSubscribe = (e) => {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const email = (form.get("email") || "").toString().trim();
-    if (!email) return;
-    alert(`${t("subscribe")}: ${email}`);
-    e.currentTarget.reset();
-  };
+  // Contact info from Firestore (via your existing hook)
+  const { content } = useSiteContent();
+
+  const phoneDisplay =
+    content?.contact_phone_display ||
+    content?.contact_phone ||
+    "(555) 123-4567";
+  const phoneHref = `tel:${
+    (content?.contact_phone || "").replace(/\D+/g, "") || "+15551234567"
+  }`;
+  const email = content?.contact_email || "hello@damioptica.com";
+  const address =
+    (isEN ? content?.contact_address_en : content?.contact_address_es) ||
+    content?.contact_address ||
+    t("address_line");
+  const hours =
+    (isEN ? content?.contact_hours_en : content?.contact_hours_es) ||
+    t("hours_val");
+
+  // Categories (derived from products) – safe fallback when rules block
+  const [cats, setCats] = useState([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        // Small, cheap read; only used to render a few footer links
+        const q = query(collection(db, "products"), limit(200));
+        const snap = await getDocs(q);
+
+        const names = new Map(); // key: displayName, val: slug
+        snap.forEach((doc) => {
+          const p = doc.data() || {};
+          const display =
+            (isEN ? p.category_en : p.category_es) || p.category || "General";
+          const key =
+            p.categoryKey ||
+            slugify(p.category_en || p.category_es || p.category || display);
+          if (display && key && !names.has(display)) {
+            names.set(display, key);
+          }
+        });
+
+        const list = Array.from(names.entries()).map(([name, key]) => ({
+          name,
+          key,
+        }));
+        // Show just a few
+        setCats(list.slice(0, 5));
+      } catch (err) {
+        // Most likely: permission-denied. Fall back silently.
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Footer categories read failed:", err?.code || err);
+        }
+        setCats([]); // graceful fallback
+      }
+    })();
+  }, [isEN]);
 
   const linkBase =
     "text-sm text-muted hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded";
@@ -55,123 +125,70 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Shop */}
+        {/* Shop (dynamic categories + See all) */}
         <div>
           <h3 className="text-sm font-semibold text-ink mb-4">
             {t("footer_shop")}
           </h3>
           <ul className="space-y-2">
+            {cats.map((c) => (
+              <li key={c.key}>
+                <Link
+                  href={`/categories/${encodeURIComponent(c.key)}`}
+                  className={linkBase}
+                >
+                  {c.name}
+                </Link>
+              </li>
+            ))}
             <li>
-              <a href="/category/mens-glasses" className={linkBase}>
-                {t("shop_mens")}
-              </a>
-            </li>
-            <li>
-              <a href="/category/womens-glasses" className={linkBase}>
-                {t("shop_womens")}
-              </a>
-            </li>
-            <li>
-              <a href="/category/kids-glasses" className={linkBase}>
-                {t("shop_kids")}
-              </a>
-            </li>
-            <li>
-              <a href="/category/sunglasses" className={linkBase}>
-                {t("shop_sunglasses")}
-              </a>
-            </li>
-            <li>
-              <a href="/category/blue-light" className={linkBase}>
-                {t("shop_bluelight")}
-              </a>
-            </li>
-            <li>
-              <a href="/category/contact-lenses" className={linkBase}>
-                {t("shop_contacts")}
-              </a>
+              <Link href="/categories" className={linkBase}>
+                {isEN ? "See all categories" : "Ver todas las categorías"}
+              </Link>
             </li>
           </ul>
         </div>
 
-        {/* Customer Care */}
+        {/* Customer Care (trimmed as requested) */}
         <div>
           <h3 className="text-sm font-semibold text-ink mb-4">
             {t("footer_care")}
           </h3>
           <ul className="space-y-2">
             <li>
-              <a href="/help/shipping" className={linkBase}>
-                {t("care_shipping")}
-              </a>
-            </li>
-            <li>
-              <a href="/help/returns" className={linkBase}>
-                {t("care_returns")}
-              </a>
-            </li>
-            <li>
-              <a href="/help/warranty" className={linkBase}>
-                {t("care_warranty")}
-              </a>
-            </li>
-            <li>
-              <a href="/help/faq" className={linkBase}>
+              <Link href="/help/faq" className={linkBase}>
                 {t("care_faq")}
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/book/exam" className={linkBase}>
-                {t("care_exam")}
-              </a>
-            </li>
-            <li>
-              <a href="/contact" className={linkBase}>
+              <Link href="/contact" className={linkBase}>
                 {t("care_contact")}
-              </a>
+              </Link>
             </li>
           </ul>
         </div>
 
-        {/* Newsletter */}
+        {/* Newsletter → Contact Us button */}
         <div>
           <h3 className="text-sm font-semibold text-ink mb-4">
             {t("stay_in_loop")}
           </h3>
           <p className="text-sm text-muted mb-3">{t("newsletter_blurb")}</p>
-          <form onSubmit={onSubscribe} className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Mail
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-              />
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder={t("newsletter_placeholder")}
-                className="w-full pl-9 pr-3 py-2 rounded-md border border-brand/25 bg-mist text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand/40"
-              />
-            </div>
-            <button type="submit" className="btn px-4 py-2">
-              {t("subscribe")}
-            </button>
-          </form>
+          <Link href="/contact" className="btn px-4 py-2 inline-flex">
+            {isEN ? "Contact us" : "Contáctanos"}
+          </Link>
         </div>
       </div>
 
-      {/* Contact row */}
+      {/* Contact row (from Firestore via useSiteContent) */}
       <div className="border-t border-white/60 bg-mist/50">
         <div className="container-tight py-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
           <div className="flex items-start gap-3">
             <Phone size={18} className="text-brand mt-0.5" />
             <div>
               <p className="font-medium text-ink">{t("call_us")}</p>
-              <a
-                href="tel:+15551234567"
-                className="text-muted hover:text-brand"
-              >
-                (555) 123-4567
+              <a href={phoneHref} className="text-muted hover:text-brand">
+                {phoneDisplay}
               </a>
             </div>
           </div>
@@ -180,10 +197,10 @@ export default function Footer() {
             <div>
               <p className="font-medium text-ink">{t("email")}</p>
               <a
-                href="mailto:hello@damioptica.com"
+                href={`mailto:${email}`}
                 className="text-muted hover:text-brand"
               >
-                hello@damioptica.com
+                {email}
               </a>
             </div>
           </div>
@@ -191,14 +208,14 @@ export default function Footer() {
             <MapPin size={18} className="text-brand mt-0.5" />
             <div>
               <p className="font-medium text-ink">{t("visit")}</p>
-              <p className="text-muted">{t("address_line")}</p>
+              <p className="text-muted">{address}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <Clock size={18} className="text-brand mt-0.5" />
             <div>
               <p className="font-medium text-ink">{t("hours")}</p>
-              <p className="text-muted">{t("hours_val")}</p>
+              <p className="text-muted">{hours}</p>
             </div>
           </div>
         </div>
@@ -211,18 +228,18 @@ export default function Footer() {
             © {year} {t("brand")}. {t("all_rights")}
           </p>
           <nav className="flex flex-wrap gap-4">
-            <a href="/privacy" className={linkBase}>
+            <Link href="/privacy" className={linkBase}>
               {t("legal_privacy")}
-            </a>
-            <a href="/terms" className={linkBase}>
+            </Link>
+            <Link href="/terms" className={linkBase}>
               {t("legal_terms")}
-            </a>
-            <a href="/cookies" className={linkBase}>
+            </Link>
+            <Link href="/cookies" className={linkBase}>
               {t("legal_cookies")}
-            </a>
-            <a href="/accessibility" className={linkBase}>
+            </Link>
+            <Link href="/accessibility" className={linkBase}>
               {t("legal_accessibility")}
-            </a>
+            </Link>
           </nav>
         </div>
       </div>
