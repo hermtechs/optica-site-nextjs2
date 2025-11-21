@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PromoBarSettings from "./PromoBarSettings";
 import { db } from "@/lib/firebaseClient";
 import {
   doc,

@@ -1,72 +1,24 @@
-// components/HeroCarousel.js
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
-
-const SLIDES = [
-  {
-    id: 1,
-    img: "/hero-banner.jpg",
-    eyebrow: "Nueva temporada",
-    title: "Monturas ligeras, visión clara",
-    subtitle: "Comodidad diaria con estilo minimalista.",
-    ctas: [
-      { href: "/products", label: "Comprar ahora", variant: "primary" },
-      {
-        href: "/search?cats=Sunglasses",
-        label: "Ver gafas de sol",
-        variant: "secondary",
-      },
-    ],
-  },
-  {
-    id: 2,
-    img: "/hero-banner2.jpg",
-    eyebrow: "Edición azul",
-    title: "Protección luz azul, menos fatiga",
-    subtitle: "Trabaja y juega con mayor comodidad visual.",
-    ctas: [
-      {
-        href: "/products?cats=Blue-Light%20Glasses",
-        label: "Luz azul",
-        variant: "primary",
-      },
-      { href: "/search", label: "Explorar todo", variant: "secondary" },
-    ],
-  },
-  {
-    id: 3,
-    img: "/hero-banner3.jpg",
-    eyebrow: "Sol & ciudad",
-    title: "Sunglasses con tratamiento UV400",
-    subtitle: "Bloqueo confiable. Estilos para cada día.",
-    ctas: [
-      {
-        href: "/products?cats=Sunglasses",
-        label: "Sunglasses",
-        variant: "primary",
-      },
-      { href: "/about", label: "Conócenos", variant: "secondary" },
-    ],
-  },
-];
+import useSiteContent from "@/lib/useSiteContent";
 
 function CTA({ href, children, variant = "primary" }) {
   const base =
     "inline-flex items-center justify-center px-5 py-2.5 rounded-md text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2";
   return variant === "secondary" ? (
     <Link
-      href={href}
+      href={href || "#"}
       className={`${base} btn-outline bg-white/10 border-white/60 text-white hover:bg-white/20 focus-visible:ring-white/60`}
     >
       {children}
     </Link>
   ) : (
     <Link
-      href={href}
+      href={href || "#"}
       className={`${base} bg-brand text-white hover:opacity-90 focus-visible:ring-brand/40`}
     >
       {children}
@@ -76,30 +28,69 @@ function CTA({ href, children, variant = "primary" }) {
 
 export default function HeroCarousel() {
   const { locale } = useLocale();
+  const isEN = locale === "en";
+  const { content } = useSiteContent();
+
+  const rawSlides = Array.isArray(content?.hero_slides)
+    ? content.hero_slides
+    : [];
+
+  const slides = useMemo(() => {
+    const list = rawSlides
+      .filter((s) => s && s.enabled !== false)
+      .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
+      .map((s) => {
+        const eyebrow = (isEN ? s.eyebrow_en : s.eyebrow_es) ?? s.eyebrow ?? "";
+        const title = (isEN ? s.title_en : s.title_es) ?? s.title ?? "";
+        const subtitle =
+          (isEN ? s.subtitle_en : s.subtitle_es) ?? s.subtitle ?? "";
+        const ctas = Array.isArray(s.ctas)
+          ? s.ctas.map((c, i) => ({
+              href: c.href || "#",
+              variant: c.variant === "secondary" ? "secondary" : "primary",
+              label: (isEN ? c.label_en : c.label_es) ?? c.label ?? "",
+              key: `cta-${i}`,
+            }))
+          : [];
+        return {
+          id: s.id || `${title}-${Math.random().toString(36).slice(2)}`,
+          img: s.image || "/hero-banner.jpg",
+          eyebrow,
+          title,
+          subtitle,
+          ctas,
+        };
+      });
+    return list;
+  }, [rawSlides, isEN]);
+
   const [index, setIndex] = useState(0);
   const timer = useRef(null);
-  const count = SLIDES.length;
 
   useEffect(() => {
+    if (!slides.length) return;
     clearInterval(timer.current);
-    timer.current = setInterval(() => setIndex((i) => (i + 1) % count), 6000);
+    timer.current = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, 6000);
     return () => clearInterval(timer.current);
-  }, [count, locale]);
+  }, [slides.length, locale]);
 
-  const go = (d) => setIndex((i) => (i + d + count) % count);
+  const go = (d) =>
+    setIndex((i) => (i + d + (slides.length || 1)) % (slides.length || 1));
+
+  if (!slides.length) return null;
 
   return (
     <section className="relative overflow-x-hidden">
-      {" "}
-      {/* clamp any stray horizontal pixels */}
       <div className="relative h-[72vh] min-h-[420px] w-full max-w-full overflow-hidden">
-        {/* Slides */}
-        {SLIDES.map((s, i) => (
+        {/* Slides (z-0) */}
+        {slides.map((s, i) => (
           <img
             key={s.id}
             src={s.img}
             alt={s.title}
-            className={`absolute inset-0 block h-full w-full max-w-full object-cover transition-opacity duration-700 will-change-transform ${
+            className={`absolute inset-0 z-0 block h-full w-full max-w-full object-cover transition-opacity duration-700 will-change-transform ${
               i === index ? "opacity-100" : "opacity-0"
             }`}
             loading={i === 0 ? "eager" : "lazy"}
@@ -107,29 +98,27 @@ export default function HeroCarousel() {
           />
         ))}
 
-        {/* Soft top gradient (behind navbar) */}
+        {/* Soft top gradient (no pointer events, z-10) */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-transparent to-transparent"
+          className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/40 via-transparent to-transparent"
         />
 
-        {/* Center content */}
-        <div className="relative z-10 flex h-full w-full max-w-full items-center justify-center">
+        {/* Center content (put above everything else, z-20) */}
+        <div className="relative z-20 flex h-full w-full max-w-full items-center justify-center">
           <div className="container-tight text-center text-white min-w-0">
-            {" "}
-            {/* min-w-0 prevents children from forcing width */}
             <p className="text-xs font-semibold tracking-wider uppercase drop-shadow">
-              {SLIDES[index].eyebrow}
+              {slides[index].eyebrow}
             </p>
             <h1 className="mt-2 text-3xl md:text-5xl font-semibold tracking-tight drop-shadow">
-              {SLIDES[index].title}
+              {slides[index].title}
             </h1>
             <p className="mt-3 text-base md:text-lg text-white/90 drop-shadow">
-              {SLIDES[index].subtitle}
+              {slides[index].subtitle}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              {SLIDES[index].ctas.map((c) => (
-                <CTA key={c.href} href={c.href} variant={c.variant}>
+              {slides[index].ctas.map((c) => (
+                <CTA key={c.key} href={c.href} variant={c.variant}>
                   {c.label}
                 </CTA>
               ))}
@@ -137,10 +126,10 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Dots (centered, no overflow) */}
-        <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+        {/* Dots (z-20) */}
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
           <div className="flex items-center gap-2">
-            {SLIDES.map((s, i) => (
+            {slides.map((s, i) => (
               <button
                 key={s.id}
                 onClick={() => setIndex(i)}
@@ -153,19 +142,19 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Prev/Next — hidden on mobile */}
-        <div className="absolute inset-y-0 left-0 right-0 z-10 hidden md:flex items-center justify-between px-2">
+        {/* Prev/Next — make the CONTAINER ignore clicks, only buttons clickable */}
+        <div className="absolute inset-y-0 left-0 right-0 z-20 hidden md:flex items-center justify-between px-2 pointer-events-none">
           <button
             onClick={() => go(-1)}
             aria-label="Previous slide"
-            className="inline-flex items-center justify-center rounded-full w-11 h-11 bg-black/35 text-white hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            className="pointer-events-auto inline-flex items-center justify-center rounded-full w-11 h-11 bg-black/35 text-white hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <ChevronLeft size={22} />
           </button>
           <button
             onClick={() => go(1)}
             aria-label="Next slide"
-            className="inline-flex items-center justify-center rounded-full w-11 h-11 bg-black/35 text-white hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            className="pointer-events-auto inline-flex items-center justify-center rounded-full w-11 h-11 bg-black/35 text-white hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <ChevronRight size={22} />
           </button>

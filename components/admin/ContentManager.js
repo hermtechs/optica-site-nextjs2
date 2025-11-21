@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { db, storage } from "@/lib/firebaseClient";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import PromoBarSettings from "./PromoBarSettings";
 
 const inputCls =
   "block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand/40";
@@ -157,11 +158,12 @@ export default function ContentManager() {
       {/* Promo */}
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm grid gap-3">
         <h4 className="text-base font-semibold text-ink">Promo bar</h4>
-        <input
+        {/* <input
           className={inputCls}
           value={content[L("promo_text")] ?? ""}
           onChange={(e) => setL("promo_text", e.target.value)}
-        />
+        /> */}
+        <PromoBarSettings />
       </section>
 
       {/* Global Buttons / WhatsApp CTA */}

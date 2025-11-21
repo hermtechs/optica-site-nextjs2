@@ -21,14 +21,12 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
 
   useEffect(() => setMounted(true), []);
 
-  // Close on Escape
   useEffect(() => {
     const onEsc = (e) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
   }, []);
 
-  // Lock body scroll when menu is open
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -38,11 +36,15 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
     };
   }, [open]);
 
+  // 👇 NEW: compute top and z-index based on promo visibility
+  const topClass = offsetByPromo ? "top-10" : "top-0"; // promo bar assumed ~2.5rem (h-10)
+  const zClass = offsetByPromo ? "z-30" : "z-50"; // put navbar *below* promo bar when it's visible
+
   const wrap = overHero
-    ? `absolute inset-x-0 ${offsetByPromo ? "top-10" : "top-0"} z-50 ${
+    ? `absolute inset-x-0 ${topClass} ${zClass} ${
         open ? "text-ink" : "text-white"
       }`
-    : "relative border-b bg-white text-ink";
+    : `relative ${zClass} border-b bg-white text-ink`;
 
   const barClasses =
     "container-tight h-20 flex items-center justify-between relative " +
@@ -63,14 +65,9 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
       ? "hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 text-white"
       : "hover:bg-surf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 text-ink");
 
-  // Localized labels after mount to avoid hydration mismatch
   const ariaSearch = mounted ? t("search_aria") : undefined;
   const ariaMenu = mounted ? t("menu") : undefined;
   const ariaClose = mounted ? t("close_menu") : undefined;
-
-  // Some bundles use "categories_label"; fall back to "categories" if present
-  const categoriesLabel =
-    t("categories_label") || t("categories") || "Categories";
 
   return (
     <header className={wrap} role="navigation" aria-label="Main">
@@ -94,18 +91,14 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
             <Link href="/" className={link}>
               {t("home")}
             </Link>
-            <Link href="/search" className={link}>
-              {t("shops")}
-            </Link>
             <Link href="/products" className={link}>
               {t("products")}
             </Link>
             <Link href="/categories" className={link}>
-              {categoriesLabel}
+              {t("categories_label")}
             </Link>
           </nav>
 
-          {/* Brand */}
           <Link
             href="/"
             className={
@@ -137,14 +130,29 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
           {t("brand")}
         </Link>
 
-        {/* RIGHT: Desktop language toggle + Mobile hamburger */}
-        <div className="flex items-center gap-2">
+        {/* RIGHT: Desktop language toggle + Mobile quick language + Mobile hamburger */}
+        <div className="flex items-center gap-1.5 md:gap-2">
+          {/* Desktop language toggle */}
           <div className="hidden md:block">
             <Suspense fallback={null}>
               <LanguageToggle size="sm" />
             </Suspense>
           </div>
 
+          {/* Mobile quick language (tiny, always visible) */}
+          <div
+            className={
+              "md:hidden " + (overHero && !open ? "text-white" : "text-ink")
+            }
+          >
+            <div className="origin-right scale-[0.74] sm:scale-[0.82] md:scale-100 -mr-1">
+              <Suspense fallback={null}>
+                <LanguageToggle size="xs" />
+              </Suspense>
+            </div>
+          </div>
+
+          {/* Mobile hamburger */}
           <div className="md:hidden">
             <button
               suppressHydrationWarning
@@ -183,10 +191,8 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
             "
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Spacer for navbar/promo */}
             <div className={offsetByPromo ? "h-[5rem]" : "h-20"} />
 
-            {/* Sticky header */}
             <div className="sticky top-0 z-50 bg-white/95 supports-[backdrop-filter]:bg-white/80 backdrop-blur border-b">
               <div className="container-tight flex items-center justify-between py-2">
                 <span className="text-lg font-semibold text-ink">
@@ -203,7 +209,6 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
               </div>
             </div>
 
-            {/* Links */}
             <nav className="container-tight py-4 text-lg">
               <ul className="space-y-2">
                 <li>
@@ -213,15 +218,6 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                     onClick={() => setOpen(false)}
                   >
                     {t("home")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/search"
-                    className="block px-1 py-2 rounded hover:bg-mist"
-                    onClick={() => setOpen(false)}
-                  >
-                    {t("shops")}
                   </Link>
                 </li>
                 <li>
@@ -239,7 +235,7 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                     className="block px-1 py-2 rounded hover:bg-mist"
                     onClick={() => setOpen(false)}
                   >
-                    {categoriesLabel}
+                    {t("categories_label")}
                   </Link>
                 </li>
                 <li>
@@ -260,9 +256,17 @@ export default function SiteNavbar({ overHero = true, offsetByPromo = true }) {
                     {t("care_contact")}
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/search?autofocus=1"
+                    className="block px-1 py-2 rounded hover:bg-mist"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t("search_title")}
+                  </Link>
+                </li>
               </ul>
 
-              {/* Language toggle inside panel */}
               <div className="mt-6">
                 <Suspense fallback={null}>
                   <LanguageToggle fullWidth size="md" />

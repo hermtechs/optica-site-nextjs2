@@ -6,6 +6,7 @@ import AuthGate from "@/components/admin/AuthGate";
 import ProductsManager from "@/components/admin/ProductsManager";
 import ContentManager from "@/components/admin/ContentManager";
 import SiteSettings from "@/components/admin/SiteSettings";
+import HeroManagerInSettings from "./HeroManagerInSettings";
 
 export default function AdminApp() {
   const [tab, setTab] = useState("products"); // "products" | "content"
@@ -36,6 +37,7 @@ export default function AdminApp() {
         <div className="mt-6">
           {tab === "products" ? <ProductsManager /> : <ContentManager />}
           <SiteSettings />
+          <HeroManagerInSettings />
         </div>
       </AuthGate>
     </main>
