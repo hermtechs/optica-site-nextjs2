@@ -11,7 +11,7 @@ import Footer from "@/components/Footer";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 
-// 🔄 Firestore (live products)
+// Firestore (live products)
 import { db } from "@/lib/firebaseClient";
 import { collection, onSnapshot } from "firebase/firestore";
 
@@ -24,6 +24,7 @@ function normalize(str = "") {
     .toLowerCase()
     .trim();
 }
+
 /* keep URL shareable with state */
 function buildUrl(base, state) {
   const p = new URLSearchParams();
@@ -35,24 +36,18 @@ function buildUrl(base, state) {
   return p.toString() ? `${base}?${p.toString()}` : base;
 }
 
-/**
- * Reusable All Products + Search page
- * Props:
- * - basePath: "/search" | "/products"  (used in the URL while you filter/sort)
- * - title?: string
- * - subtitle?: string
- * - autofocusParam?: string  (query param name that triggers focus-on-arrival, default "autofocus")
- */
 export default function ProductsSearchPage({
   basePath = "/search",
   title,
   subtitle,
   autofocusParam = "autofocus",
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const isEN = locale === "en";
+
   const params = useSearchParams();
 
-  // URL → state (defaults make page show ALL products when q is empty)
+  // URL → state
   const qParam = params.get("q") || "";
   const sortParam = params.get("sort") || "featured";
   const catsParam = params.get("cats") || "";
@@ -70,9 +65,8 @@ export default function ProductsSearchPage({
   const [maxPrice, setMaxPrice] = useState(maxParam);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // 🔴 NEW: live products from Firestore
+  // live products
   const [items, setItems] = useState([]);
-
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "products"), (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -84,36 +78,64 @@ export default function ProductsSearchPage({
   const inputRef = useRef(null);
   const headerRef = useRef(null);
 
-  // derive categories (use localized or base category)
+  // categories (localized label for the chips)
   const categories = useMemo(() => {
     const set = new Set();
     items.forEach((p) =>
-      set.add(p.category_es || p.category_en || p.category || "General")
+      set.add(
+        (isEN ? p.category_en : p.category_es) ||
+          p.category ||
+          (isEN ? "General" : "General")
+      )
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [items]);
+  }, [items, isEN]);
 
-  // Build index for Fuse (with localized fallbacks), but DO NOT change your UI structure
-  const indexItems = useMemo(
-    () =>
-      items.map((p) => {
-        const name = p.name_es || p.name_en || p.name || "";
-        const short = p.shortDesc_es || p.shortDesc_en || p.shortDesc || "";
-        const long = p.longDesc_es || p.longDesc_en || p.longDesc || "";
-        const cat = p.category_es || p.category_en || p.category || "";
-        return {
-          ...p,
-          // Derived (used for filter/search, UI still reads original fields as before)
-          _name: name,
-          _category: cat,
-          iName: normalize(name),
-          iShort: normalize(short),
-          iLong: normalize(long),
-          iCat: normalize(cat),
-        };
-      }),
-    [items]
-  );
+  // bilingual index for Fuse (combine both languages so either query matches)
+  const indexItems = useMemo(() => {
+    return items.map((p) => {
+      const nameEN = p.name_en || "";
+      const nameES = p.name_es || "";
+      const nameRaw = p.name || "";
+
+      const shortEN = p.shortDesc_en || "";
+      const shortES = p.shortDesc_es || "";
+      const shortRaw = p.shortDesc || "";
+
+      const longEN = p.longDesc_en || "";
+      const longES = p.longDesc_es || "";
+      const longRaw = p.longDesc || "";
+
+      const catEN = p.category_en || "";
+      const catES = p.category_es || "";
+      const catRaw = p.category || "";
+
+      // Combined text per field so Fuse can match either language
+      const bothNames = [nameEN, nameES, nameRaw].filter(Boolean).join(" | ");
+      const bothShort = [shortEN, shortES, shortRaw]
+        .filter(Boolean)
+        .join(" | ");
+      const bothLong = [longEN, longES, longRaw].filter(Boolean).join(" | ");
+      const bothCats = [catEN, catES, catRaw].filter(Boolean).join(" | ");
+
+      // A locale-preferred display name/category for UI (not used by Fuse)
+      const displayName =
+        (isEN ? nameEN : nameES) || nameEN || nameES || nameRaw || "";
+      const displayCategory =
+        (isEN ? catEN : catES) || catEN || catES || catRaw || "";
+
+      return {
+        ...p,
+        _displayName: displayName,
+        _displayCategory: displayCategory,
+        // Fuse fields (normalized, contain both EN and ES)
+        iName: normalize(bothNames),
+        iShort: normalize(bothShort),
+        iLong: normalize(bothLong),
+        iCat: normalize(bothCats),
+      };
+    });
+  }, [items, isEN]);
 
   const fuse = useMemo(
     () =>
@@ -134,7 +156,7 @@ export default function ProductsSearchPage({
     [indexItems]
   );
 
-  // focus the input on first paint; if asked (…?autofocus=1), also scroll it into view
+  // focus the input on first paint; optionally scroll to it
   useEffect(() => {
     inputRef.current?.focus();
     if (wantsAutofocus) {
@@ -148,7 +170,7 @@ export default function ProductsSearchPage({
     }
   }, [wantsAutofocus]);
 
-  // keep URL in sync under the current base path
+  // keep URL in sync
   useEffect(() => {
     const url = buildUrl(basePath, {
       q,
@@ -175,15 +197,28 @@ export default function ProductsSearchPage({
   }, [q, fuse, indexItems]);
 
   const filtered = useMemo(() => {
+    // robust price parsing
     const min = minPrice === "" ? -Infinity : Number(minPrice);
     const max = maxPrice === "" ? Infinity : Number(maxPrice);
+    const [low, high] =
+      Number.isFinite(min) && Number.isFinite(max) && min > max
+        ? [max, min] // swap if user inverted
+        : [min, max];
+
     return searched
       .map((r) => r.item)
       .filter((p) => {
-        // category filter uses derived _category so localized works
-        if (selectedCats.size && !selectedCats.has(p._category)) return false;
-        if (typeof p.price === "number" && (p.price < min || p.price > max))
+        // category filter uses localized display category
+        if (selectedCats.size && !selectedCats.has(p._displayCategory)) {
           return false;
+        }
+
+        // price filter (coerce to number if it's a string in Firestore)
+        const priceNum = Number(p.price);
+        if (Number.isFinite(priceNum)) {
+          if (priceNum < low || priceNum > high) return false;
+        }
+        // if price is not a number, ignore price filter for that product
         return true;
       });
   }, [searched, selectedCats, minPrice, maxPrice]);
@@ -192,19 +227,16 @@ export default function ProductsSearchPage({
     const arr = [...filtered];
     switch (sort) {
       case "priceAsc":
-        arr.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+        arr.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
         break;
       case "priceDesc":
-        arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+        arr.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
         break;
       case "nameAsc":
-        // try localized name, then fallback
-        const getName = (p) =>
-          p.name_es || p.name_en || p.name || p._name || "";
-        arr.sort((a, b) => getName(a).localeCompare(getName(b)));
+        arr.sort((a, b) => a._displayName.localeCompare(b._displayName));
         break;
       default:
-        // "featured" keeps incoming order (onSnapshot order) – same behavior as before
+        // featured: keep incoming order
         break;
     }
     return arr;
@@ -213,12 +245,7 @@ export default function ProductsSearchPage({
   const suggestion = useMemo(() => {
     if (!q.trim() || searched.length === 0) return null;
     const best = searched[0];
-    // prefer localized name if available
-    const bestName =
-      best.item.name_es ||
-      best.item.name_en ||
-      best.item.name ||
-      best.item._name;
+    const bestName = best.item._displayName;
     return best.score > 0.5 ? bestName : null;
   }, [q, searched]);
 
@@ -368,7 +395,7 @@ export default function ProductsSearchPage({
                       onChange={(e) =>
                         setMinPrice(e.target.value.replace(/[^\d]/g, ""))
                       }
-                      placeholder="Min"
+                      placeholder={isEN ? "Min" : "Mín"}
                       className="w-24 rounded-md border border-brand/25 bg-white px-2.5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/40"
                     />
                     <span className="text-muted">—</span>
@@ -379,7 +406,7 @@ export default function ProductsSearchPage({
                       onChange={(e) =>
                         setMaxPrice(e.target.value.replace(/[^\d]/g, ""))
                       }
-                      placeholder="Max"
+                      placeholder={isEN ? "Max" : "Máx"}
                       className="w-24 rounded-md border border-brand/25 bg-white px-2.5 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/40"
                     />
                     <button

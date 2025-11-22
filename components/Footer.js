@@ -1,7 +1,7 @@
 // components/Footer.js
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Mail,
@@ -41,12 +41,12 @@ export default function Footer() {
   // Contact info from Firestore (via your existing hook)
   const { content } = useSiteContent();
 
-  const phoneDisplay =
+  const phoneRaw =
     content?.contact_phone_display ||
     content?.contact_phone ||
     "(555) 123-4567";
   const phoneHref = `tel:${
-    (content?.contact_phone || "").replace(/\D+/g, "") || "+15551234567"
+    (content?.contact_phone || "").replace(/[^\d+]/g, "") || "+15551234567"
   }`;
   const email = content?.contact_email || "hello@damioptica.com";
   const address =
@@ -63,37 +63,40 @@ export default function Footer() {
     (async () => {
       try {
         // Small, cheap read; only used to render a few footer links
-        const q = query(collection(db, "products"), limit(200));
-        const snap = await getDocs(q);
+        const qSnap = await getDocs(
+          query(collection(db, "products"), limit(200))
+        );
 
-        const names = new Map(); // key: displayName, val: slug
-        snap.forEach((doc) => {
+        const byName = new Map(); // key: display name (localized), value: slug
+        qSnap.forEach((doc) => {
           const p = doc.data() || {};
           const display =
-            (isEN ? p.category_en : p.category_es) || p.category || "General";
-          const key =
-            p.categoryKey ||
-            slugify(p.category_en || p.category_es || p.category || display);
-          if (display && key && !names.has(display)) {
-            names.set(display, key);
+            (isEN ? p.category_en : p.category_es) ||
+            p.category ||
+            (isEN ? "General" : "General");
+          const localSlug = slugify(display); // localized slug for the link
+
+          // Only keep the first example we see per display name
+          if (display && !byName.has(display)) {
+            byName.set(display, localSlug);
           }
         });
 
-        const list = Array.from(names.entries()).map(([name, key]) => ({
+        const list = Array.from(byName.entries()).map(([name, key]) => ({
           name,
           key,
         }));
-        // Show just a few
-        setCats(list.slice(0, 5));
+
+        setCats(list.slice(0, 5)); // show a few
       } catch (err) {
-        // Most likely: permission-denied. Fall back silently.
+        // Most likely: permission-denied. Fall back silently for production.
         if (process.env.NODE_ENV !== "production") {
           console.warn("Footer categories read failed:", err?.code || err);
         }
         setCats([]); // graceful fallback
       }
     })();
-  }, [isEN]);
+  }, [isEN]); // refetch when language toggles
 
   const linkBase =
     "text-sm text-muted hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded";
@@ -133,8 +136,9 @@ export default function Footer() {
           <ul className="space-y-2">
             {cats.map((c) => (
               <li key={c.key}>
+                {/* Localized link built from the localized name */}
                 <Link
-                  href={`/categories/${encodeURIComponent(c.key)}`}
+                  href={`/categories/${encodeURIComponent(slugify(c.name))}`}
                   className={linkBase}
                 >
                   {c.name}
@@ -188,7 +192,7 @@ export default function Footer() {
             <div>
               <p className="font-medium text-ink">{t("call_us")}</p>
               <a href={phoneHref} className="text-muted hover:text-brand">
-                {phoneDisplay}
+                {phoneRaw}
               </a>
             </div>
           </div>
@@ -228,16 +232,28 @@ export default function Footer() {
             © {year} {t("brand")}. {t("all_rights")}
           </p>
           <nav className="flex flex-wrap gap-4">
-            <Link href="/privacy" className={linkBase}>
+            <Link
+              href="/privacy"
+              className="text-sm text-muted hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded"
+            >
               {t("legal_privacy")}
             </Link>
-            <Link href="/terms" className={linkBase}>
+            <Link
+              href="/terms"
+              className="text-sm text-muted hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded"
+            >
               {t("legal_terms")}
             </Link>
-            <Link href="/cookies" className={linkBase}>
+            <Link
+              href="/cookies"
+              className="text-sm text-muted hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded"
+            >
               {t("legal_cookies")}
             </Link>
-            <Link href="/accessibility" className={linkBase}>
+            <Link
+              href="/accessibility"
+              className="text-sm text-muted hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded"
+            >
               {t("legal_accessibility")}
             </Link>
           </nav>

@@ -7,16 +7,25 @@ import { useMemo } from "react";
 import useSiteContent from "@/lib/useSiteContent";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 
-function formatCOP(n) {
-  if (typeof n !== "number") return n;
+/** Format COP with locale-aware thousands separators:
+ *  - EN:  1,234
+ *  - ES:  1.234
+ *  Always show currency as "COP" (not $), no decimals.
+ */
+function formatCOPLocalized(value, isEN) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value ?? "");
   try {
-    return new Intl.NumberFormat("es-CO", {
+    return new Intl.NumberFormat(isEN ? "en-US" : "es-CO", {
       style: "currency",
       currency: "COP",
+      currencyDisplay: "code", // "COP 12,345" / "COP 12.345"
       maximumFractionDigits: 0,
-    }).format(n);
+    }).format(num);
   } catch {
-    return `COP ${Math.round(n).toLocaleString("es-CO")}`;
+    // Fallback: simple grouping
+    const grouped = Math.round(num).toLocaleString(isEN ? "en-US" : "de-DE"); // de-DE gives dot grouping
+    return `COP ${grouped}`;
   }
 }
 
@@ -42,13 +51,11 @@ function waLink(product, phone, isEN) {
     product?.name ||
     (isEN ? "Unnamed product" : "Producto sin nombre");
 
+  const priceText = formatCOPLocalized(product?.price, isEN);
+
   const baseText = isEN
-    ? `Hello, I’d like to order this product:\n• ${displayName}\n• ${formatCOP(
-        product?.price
-      )}`
-    : `Hola, quiero pedir este producto:\n• ${displayName}\n• ${formatCOP(
-        product?.price
-      )}`;
+    ? `Hello, I’d like to order this product:\n• ${displayName}\n• ${priceText}`
+    : `Hola, quiero pedir este producto:\n• ${displayName}\n• ${priceText}`;
 
   const text = encodeURIComponent(`${baseText}\n${getProductUrl(product)}`);
   return `https://wa.me/${digits}?text=${text}`;
@@ -59,21 +66,25 @@ export default function ProductCard({ product }) {
   const { locale, t } = useLocale();
   const isEN = locale === "en";
 
-  const hasDiscount =
-    typeof product?.discount === "number" && product.discount > 0;
+  const rawDiscount = Number(product?.discount);
+  const hasDiscount = Number.isFinite(rawDiscount) && rawDiscount > 0;
   const isFeatured = product?.featured === true;
   const isNew = product?.isNew === true;
 
-  const { finalPrice } = useMemo(() => {
-    if (!hasDiscount) return { finalPrice: product?.price };
+  const { finalPrice, origPrice } = useMemo(() => {
+    const base = Number(product?.price);
+    const safeBase = Number.isFinite(base) ? base : undefined;
+    if (!hasDiscount || !Number.isFinite(safeBase)) {
+      return { finalPrice: safeBase, origPrice: safeBase };
+    }
     const discounted = Math.max(
       0,
-      Math.round((product?.price || 0) * (1 - product.discount / 100))
+      Math.round(safeBase * (1 - rawDiscount / 100))
     );
-    return { finalPrice: discounted };
-  }, [product, hasDiscount]);
+    return { finalPrice: discounted, origPrice: safeBase };
+  }, [product?.price, hasDiscount, rawDiscount]);
 
-  // 🔵 Localized name & category (switch by current locale)
+  // Localized name & category
   const name =
     (isEN ? product?.name_en : product?.name_es) ||
     product?.name ||
@@ -131,7 +142,7 @@ export default function ProductCard({ product }) {
                 )}
                 {hasDiscount && (
                   <span className="rounded-full bg-rose-500 px-2 py-1 text-xs font-semibold text-white shadow">
-                    -{product.discount}%
+                    -{rawDiscount}%
                   </span>
                 )}
               </div>
@@ -161,7 +172,7 @@ export default function ProductCard({ product }) {
                 )}
                 {hasDiscount && (
                   <span className="rounded-full bg-rose-500 px-2 py-1 text-xs font-semibold text-white shadow">
-                    -{product.discount}%
+                    -{rawDiscount}%
                   </span>
                 )}
               </div>
@@ -189,11 +200,11 @@ export default function ProductCard({ product }) {
 
         <div className="mt-2 flex items-center gap-2">
           <div className="text-base font-bold text-ink">
-            {formatCOP(finalPrice)}
+            {formatCOPLocalized(finalPrice, isEN)}
           </div>
           {hasDiscount && (
             <div className="text-sm text-muted line-through">
-              {formatCOP(product?.price)}
+              {formatCOPLocalized(origPrice, isEN)}
             </div>
           )}
         </div>
