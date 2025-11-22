@@ -8,10 +8,24 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ArrowRight } from "lucide-react";
 
+// helpers: make language-specific, URL-safe slugs
+function stripDiacritics(s = "") {
+  return s
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+function toDash(s = "") {
+  return stripDiacritics(s)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
+
 export default function CollectionsPills() {
   const { t, locale } = useLocale();
   const isEN = locale === "en";
-  const isES = locale === "es";
 
   const [items, setItems] = useState([]);
 
@@ -24,20 +38,22 @@ export default function CollectionsPills() {
     return () => unsub();
   }, []);
 
-  // Build categories map: { name, count, cover }
+  // Build categories map: { name (localized), slug (localized), count, cover }
   const categories = useMemo(() => {
     const map = new Map();
 
     for (const p of items) {
-      // LOCALIZED CATEGORY NAME
       const name =
         (isEN ? p.category_en : p.category_es) ||
         p.category ||
         (isEN ? "General" : "General");
 
+      const slug = toDash(name);
+
       if (!map.has(name)) {
         map.set(name, {
           name,
+          slug, // language-specific slug
           count: 0,
           cover: p.image || (Array.isArray(p.gallery) ? p.gallery[0] : ""),
         });
@@ -59,7 +75,7 @@ export default function CollectionsPills() {
       pills: arr,
       grid: arr.slice(0, 12),
     };
-  }, [items, locale]); // react to locale toggle
+  }, [items, isEN]);
 
   const pillBase =
     "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors";
@@ -112,8 +128,8 @@ export default function CollectionsPills() {
             </Link>
             {categories.pills.map((c) => (
               <Link
-                key={c.name}
-                href={`/categories?cat=${encodeURIComponent(c.name)}`}
+                key={c.slug}
+                href={`/categories/${encodeURIComponent(c.slug)}`}
                 className={`${pillBase} ${pillIdle}`}
                 title={`${c.name} (${c.count})`}
               >
@@ -130,8 +146,8 @@ export default function CollectionsPills() {
         <div className="hidden md:grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {categories.grid.map((c) => (
             <Link
-              key={c.name}
-              href={`/categories?cat=${encodeURIComponent(c.name)}`}
+              key={c.slug}
+              href={`/categories/${encodeURIComponent(c.slug)}`}
               className="group relative overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-brand/10 transition hover:shadow-md hover:ring-brand/20"
             >
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand/5 transition group-hover:bg-brand/10" />
