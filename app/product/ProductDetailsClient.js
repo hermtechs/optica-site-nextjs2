@@ -4,15 +4,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, ArrowLeft, Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
 import { db } from "@/lib/firebaseClient";
 import {
   collection,
   doc,
-  getDoc,
-  getDocs,
   limit,
   onSnapshot,
   query,
@@ -24,16 +22,23 @@ import Footer from "@/components/Footer";
 import useSiteContent from "@/lib/useSiteContent";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 
-function formatCOP(n) {
-  if (typeof n !== "number") return n;
+/** Locale-aware COP (no decimals, always “COP”, not $).
+ * EN: COP 12,345
+ * ES: COP 12.345
+ */
+function formatCOPLocalized(value, isEN) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value ?? "");
   try {
-    return new Intl.NumberFormat("es-CO", {
+    return new Intl.NumberFormat(isEN ? "en-US" : "es-CO", {
       style: "currency",
       currency: "COP",
+      currencyDisplay: "code",
       maximumFractionDigits: 0,
-    }).format(n);
+    }).format(num);
   } catch {
-    return `COP ${Math.round(n).toLocaleString("es-CO")}`;
+    const grouped = Math.round(num).toLocaleString(isEN ? "en-US" : "de-DE");
+    return `COP ${grouped}`;
   }
 }
 
@@ -55,25 +60,25 @@ function productPermalink(p) {
   return base || "#";
 }
 
-function waLink(product, phone) {
+function waLink(product, phone, isEN) {
   const digits = (phone || "").replace(/\D+/g, "");
+  const displayName =
+    (isEN ? product?.name_en : product?.name_es) ||
+    product?.name ||
+    (isEN ? "Unnamed product" : "Producto sin nombre");
+  const priceText = formatCOPLocalized(product?.price, isEN);
+
   const text = encodeURIComponent(
-    `Hola, quiero pedir este producto:\n• ${
-      product?.name_es || product?.name_en || product?.name || ""
-    }\n• ${formatCOP(product?.price)}\n${productPermalink(product)}`
+    (isEN
+      ? `Hello, I’d like to order this product:\n• ${displayName}\n• ${priceText}`
+      : `Hola, quiero pedir este producto:\n• ${displayName}\n• ${priceText}`) +
+      `\n${productPermalink(product)}`
   );
   return `https://wa.me/${digits}?text=${text}`;
 }
 
-function toDateAny(ts) {
-  if (!ts) return null;
-  if (ts?.toDate) return ts.toDate();
-  const d = new Date(ts);
-  return isNaN(d) ? null : d;
-}
-
 export default function ProductDetailsClient({ id, slug }) {
-  const { locale, t } = useLocale();
+  const { locale } = useLocale();
   const isEN = locale === "en";
   const router = useRouter();
   const { content } = useSiteContent();
@@ -83,6 +88,7 @@ export default function ProductDetailsClient({ id, slug }) {
 
   // Gallery state
   const [idx, setIdx] = useState(0);
+  const [mainLoaded, setMainLoaded] = useState(false);
   const mainImgRef = useRef(null);
 
   // Live fetch by id (preferred) or slug
@@ -117,7 +123,6 @@ export default function ProductDetailsClient({ id, slug }) {
           });
           return;
         }
-        // No id/slug → nothing to load
         setProduct(null);
         setLoading(false);
       } catch (e) {
@@ -158,20 +163,19 @@ export default function ProductDetailsClient({ id, slug }) {
   const images = useMemo(() => {
     const g = Array.isArray(product?.gallery) ? product.gallery : [];
     const list = [product?.image, ...g].filter(Boolean);
-    // de-dup
     return [...new Set(list)];
   }, [product]);
 
-  const hasDiscount =
-    typeof product?.discount === "number" && product.discount > 0;
+  // Normalize numeric fields
+  const discountNum = Number(product?.discount);
+  const hasDiscount = Number.isFinite(discountNum) && discountNum > 0;
 
   const finalPrice = useMemo(() => {
-    if (!hasDiscount) return product?.price;
-    return Math.max(
-      0,
-      Math.round((product?.price || 0) * (1 - product.discount / 100))
-    );
-  }, [product, hasDiscount]);
+    const base = Number(product?.price);
+    if (!Number.isFinite(base)) return product?.price;
+    if (!hasDiscount) return base;
+    return Math.max(0, Math.round(base * (1 - discountNum / 100)));
+  }, [product, hasDiscount, discountNum]);
 
   // Keyboard navigation for gallery
   useEffect(() => {
@@ -185,8 +189,10 @@ export default function ProductDetailsClient({ id, slug }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [images.length]);
 
-  // Scroll main image into view on change (mobile nicety)
+  // Reset image loader when changing index
   useEffect(() => {
+    setMainLoaded(false);
+    // Nice UX on mobile
     mainImgRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [idx]);
 
@@ -200,21 +206,20 @@ export default function ProductDetailsClient({ id, slug }) {
   );
 
   const phone = content?.contact_phone;
-  const wa = product ? waLink(product, phone) : "#";
-  const updated = toDateAny(product?.updatedAt || product?.createdAt);
+  const wa = product ? waLink(product, phone, isEN) : "#";
 
   if (loading) {
     return (
       <>
         <SiteNavbar overHero={false} offsetByPromo={false} />
         <main className="container-tight py-10">
-          <div className="animate-pulse grid gap-8 md:grid-cols-2">
-            <div className="aspect-[4/3] rounded-xl bg-mist" />
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="aspect-[4/3] rounded-xl bg-mist animate-pulse" />
             <div className="space-y-4">
-              <div className="h-7 w-3/4 rounded bg-mist" />
-              <div className="h-5 w-1/2 rounded bg-mist" />
-              <div className="h-10 w-40 rounded bg-mist" />
-              <div className="h-24 w-full rounded bg-mist" />
+              <div className="h-7 w-3/4 rounded bg-mist animate-pulse" />
+              <div className="h-5 w-1/2 rounded bg-mist animate-pulse" />
+              <div className="h-10 w-40 rounded bg-mist animate-pulse" />
+              <div className="h-24 w-full rounded bg-mist animate-pulse" />
             </div>
           </div>
         </main>
@@ -282,25 +287,35 @@ export default function ProductDetailsClient({ id, slug }) {
             {/* LEFT: Gallery */}
             <div className="relative">
               <div className="relative overflow-hidden rounded-2xl ring-1 ring-black/5 shadow">
+                {/* Main image */}
                 {images.length > 0 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    ref={mainImgRef}
-                    key={images[idx]}
-                    src={images[idx]}
-                    alt={title}
-                    className="aspect-[4/3] w-full object-cover transition-all duration-500"
-                  />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      ref={mainImgRef}
+                      key={images[idx]}
+                      src={images[idx]}
+                      alt={title}
+                      className="aspect-[4/3] w-full object-cover"
+                      onLoad={() => setMainLoaded(true)}
+                    />
+                    {/* Simple loader overlay */}
+                    {!mainLoaded && (
+                      <div className="absolute inset-0 animate-pulse bg-mist" />
+                    )}
+                  </>
                 ) : (
                   <div className="aspect-[4/3] w-full rounded-2xl bg-mist" />
                 )}
 
                 {/* Badges */}
                 <div className="absolute left-3 top-3 z-10 flex gap-2">
-                  {product.featured && badge("Destacado", "bg-brand")}
+                  {product.featured &&
+                    badge(isEN ? "Featured" : "Destacado", "bg-brand")}
                   {product.isNew &&
                     badge(isEN ? "New" : "Nuevo", "bg-emerald-500")}
-                  {hasDiscount && badge(`-${product.discount}%`, "bg-rose-500")}
+                  {hasDiscount &&
+                    badge(`-${Number(product.discount)}%`, "bg-rose-500")}
                 </div>
 
                 {/* Prev/Next */}
@@ -341,6 +356,7 @@ export default function ProductDetailsClient({ id, slug }) {
                           : "ring-black/5 hover:ring-brand/40"
                       }`}
                       onClick={() => setIdx(i)}
+                      loading="lazy"
                     />
                   ))}
                 </div>
@@ -362,11 +378,11 @@ export default function ProductDetailsClient({ id, slug }) {
               {/* Price */}
               <div className="mt-3 flex items-center gap-3">
                 <div className="text-2xl font-bold text-ink">
-                  {formatCOP(finalPrice)}
+                  {formatCOPLocalized(finalPrice, isEN)}
                 </div>
                 {hasDiscount && (
                   <div className="text-lg text-muted line-through">
-                    {formatCOP(product.price)}
+                    {formatCOPLocalized(product.price, isEN)}
                   </div>
                 )}
               </div>
@@ -401,31 +417,24 @@ export default function ProductDetailsClient({ id, slug }) {
               )}
 
               {/* Meta / features */}
-              <div className="mt-6 grid gap-3 text-sm text-muted">
-                {Array.isArray(product?.features) &&
-                  product.features.length > 0 && (
-                    <div>
-                      <div className="mb-1 font-medium text-ink">
-                        {isEN ? "Features" : "Características"}
-                      </div>
-                      <ul className="list-disc pl-5 text-ink/90">
-                        {product.features.map((f, i) => (
-                          <li key={i}>
-                            <span className="font-medium">{f.title}: </span>
-                            <span>{f.desc}</span>
-                          </li>
-                        ))}
-                      </ul>
+              {Array.isArray(product?.features) &&
+                product.features.length > 0 && (
+                  <div className="mt-6 text-sm text-ink">
+                    <div className="mb-1 font-medium">
+                      {isEN ? "Features" : "Características"}
                     </div>
-                  )}
-
-                {updated && (
-                  <div>
-                    {isEN ? "Updated" : "Actualizado"}:{" "}
-                    {updated.toLocaleDateString()}
+                    <ul className="list-disc pl-5 text-ink/90">
+                      {product.features.map((f, i) => (
+                        <li key={i}>
+                          {f?.title && (
+                            <span className="font-medium">{f.title}: </span>
+                          )}
+                          <span>{f?.desc}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-              </div>
             </div>
           </div>
         </div>

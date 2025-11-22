@@ -8,7 +8,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ArrowRight } from "lucide-react";
 
-// helpers: make language-specific, URL-safe slugs
+// helpers for stable keys
 function stripDiacritics(s = "") {
   return s
     .toString()
@@ -38,7 +38,7 @@ export default function CollectionsPills() {
     return () => unsub();
   }, []);
 
-  // Build categories map: { name (localized), slug (localized), count, cover }
+  // Build categories map: { name (localized), slug (for key), count, cover }
   const categories = useMemo(() => {
     const map = new Map();
 
@@ -47,18 +47,16 @@ export default function CollectionsPills() {
         (isEN ? p.category_en : p.category_es) ||
         p.category ||
         (isEN ? "General" : "General");
-
       const slug = toDash(name);
 
       if (!map.has(name)) {
         map.set(name, {
           name,
-          slug, // language-specific slug
+          slug,
           count: 0,
           cover: p.image || (Array.isArray(p.gallery) ? p.gallery[0] : ""),
         });
       }
-
       const entry = map.get(name);
       entry.count += 1;
 
@@ -96,6 +94,9 @@ export default function CollectionsPills() {
   const itemsLabel = (count) =>
     isEN ? `${count} items` : `${count} artículos`;
 
+  // Build search URL for a given localized category name
+  const searchHref = (name) => `/search?cats=${encodeURIComponent(name)}`;
+
   return (
     <section className="relative py-10">
       {/* soft background */}
@@ -129,7 +130,7 @@ export default function CollectionsPills() {
             {categories.pills.map((c) => (
               <Link
                 key={c.slug}
-                href={`/categories/${encodeURIComponent(c.slug)}`}
+                href={searchHref(c.name)}
                 className={`${pillBase} ${pillIdle}`}
                 title={`${c.name} (${c.count})`}
               >
@@ -147,7 +148,7 @@ export default function CollectionsPills() {
           {categories.grid.map((c) => (
             <Link
               key={c.slug}
-              href={`/categories/${encodeURIComponent(c.slug)}`}
+              href={searchHref(c.name)}
               className="group relative overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-brand/10 transition hover:shadow-md hover:ring-brand/20"
             >
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-brand/5 transition group-hover:bg-brand/10" />
