@@ -29,7 +29,7 @@ const es = {
 
   // search page
   search_title: "Buscar",
-  search_sub: "Encuentra gafas, lentes de sol y más — tolerante a errores.",
+  search_sub: "Encuentra gafas, lentes de sol y más.",
   search_placeholder: "Prueba: retro, luz azul, aviador…",
   results_for: "resultado(s) para",
   no_results:

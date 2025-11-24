@@ -24,7 +24,7 @@ const en = {
   shop_by_category: "Shop by Category",
 
   search_title: "Search",
-  search_sub: "Find frames, sunglasses, and more — typo-friendly.",
+  search_sub: "Find frames, sunglasses, and more.",
   search_placeholder: "Try: retro, blue light, aviator…",
   results_for: "result(s) for",
   no_results: "No results. Try other keywords (e.g., “aviator”, “blue light”).",
