@@ -106,17 +106,9 @@ export default function AuthGate({ children }) {
               No permission to view this page
             </h2>
             <p className="text-ink/80 mt-1">
-              You’re signed in as <b>{user.email}</b>, but this account isn’t on
-              the admin allowlist.
+              You’re not authorized to access this page.
             </p>
-            <ul className="mt-2 list-disc pl-5 text-sm text-muted">
-              <li>Sign out and sign in with an approved admin email.</li>
-              <li>
-                Ask the site owner to add your email in{" "}
-                <code>NEXT_PUBLIC_ADMIN_EMAILS</code> and in Firestore/Storage
-                rules.
-              </li>
-            </ul>
+
             <div className="mt-3 flex gap-2">
               <button className="btn-outline" onClick={() => signOut(auth)}>
                 Sign out
