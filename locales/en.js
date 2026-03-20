@@ -10,6 +10,7 @@ const en = {
   menu: "Menu",
   close_menu: "Close menu",
   about_link: "About",
+  test: "Test",
 
   hero_eyebrow: "Great Accessories",
   hero_cta: "See more",
